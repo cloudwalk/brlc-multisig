@@ -60,7 +60,7 @@ contract MultiSigWallet is Initializable, MultiSigWalletStorage, IMultiSigWallet
     /// @dev The transaction with the provided id is still on the cooldown.
     error CooldownNotEnded();
 
-    /// @dev The passed amount of time for the transactions expiration is zero.
+    /// @dev The passed transactions expiration time is zero.
     error ZeroExpirationTime();
 
     // -------------------- Modifiers -----------------------------------
@@ -299,6 +299,20 @@ contract MultiSigWallet is Initializable, MultiSigWalletStorage, IMultiSigWallet
      */
     function getApproval(uint256 txId, address owner) external view returns (bool) {
         return _approvals[txId][owner];
+    }
+
+    /**
+     * @dev See {IMultiSigWallet-transactionCooldownTime}.
+     */
+    function transactionCooldownTime() external view returns (uint256) {
+        return _transactionCooldownTime;
+    }
+
+    /**
+     * @dev See {IMultiSigWallet-transactionExpirationTime}.
+     */
+    function transactionExpirationTime() external view returns (uint256) {
+        return _transactionExpirationTime;
     }
 
     /**

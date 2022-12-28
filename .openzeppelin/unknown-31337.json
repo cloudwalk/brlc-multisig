@@ -1,0 +1,212 @@
+{
+  "manifestVersion": "3.2",
+  "admin": {
+    "address": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+    "txHash": "0x6ba4d735aaf19aa01ffbd225dc8b34a96ad16b882d338f56b1a27c3037cabb55"
+  },
+  "proxies": [
+    {
+      "address": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+      "txHash": "0x8af946008fb019ef49b176aae9a0c132f2a993928d3d997717dd5d0d3fca2b34",
+      "kind": "transparent"
+    },
+    {
+      "address": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+      "txHash": "0x5334e8e6357716656238a4e5f60de32a5078d71c0d96a91a1cb2794a72591136",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x0165878A594ca255338adfa4d48449f69242Eb8F",
+      "txHash": "0xff1f89bb2f265583ad242e328340a531c23cc015f924e96a63a86574db9062e9",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6",
+      "txHash": "0x40c82a6d110dd65a630980f0108fe6b438f36dddddeeb6827f3bd89070717396",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x610178dA211FEF7D417bC0e6FeD39F05609AD788",
+      "txHash": "0xe3703e9a09ee9a0e46034540a94bf4da93850c56b09083d8f6270c72c2a089ab",
+      "kind": "transparent"
+    },
+    {
+      "address": "0xA51c1fc2f0D1a1b8494Ed1FE312d7C3a78Ed91C0",
+      "txHash": "0xd58db3f2dd4030e922c6c3f4d9715b70489d5ec73f85f5c50ac6c216fc6ff2d8",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x9A676e781A523b5d0C0e43731313A708CB607508",
+      "txHash": "0x2583f56cba2208c38899dfcd62169eda533a679f821bd8bc007b0c9add2f21b6",
+      "kind": "transparent"
+    },
+    {
+      "address": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "txHash": "0x5c8809b7267a0d63bed9c4e47004b191b0d15034285430d2b349c751d0da0258",
+      "kind": "transparent"
+    }
+  ],
+  "impls": {
+    "4017d11faf2a8727ac58289e80a141430803d3887fbc0718cb657c2f4bc3f991": {
+      "address": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+      "txHash": "0x91ae100aadab252eeb2819f3164445200c8498fd16b96bb6f9985857ae3d71c2",
+      "layout": {
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:67"
+          },
+          {
+            "label": "_owners",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_address)dyn_storage",
+            "contract": "MultiSigWalletStorageV1",
+            "src": "contracts/MultiSigWalletStorage.sol:17"
+          },
+          {
+            "label": "_transactions",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_array(t_struct(Transaction)415_storage)dyn_storage",
+            "contract": "MultiSigWalletStorageV1",
+            "src": "contracts/MultiSigWalletStorage.sol:20"
+          },
+          {
+            "label": "_isOwner",
+            "offset": 0,
+            "slot": "3",
+            "type": "t_mapping(t_address,t_bool)",
+            "contract": "MultiSigWalletStorageV1",
+            "src": "contracts/MultiSigWalletStorage.sol:23"
+          },
+          {
+            "label": "_approvals",
+            "offset": 0,
+            "slot": "4",
+            "type": "t_mapping(t_uint256,t_mapping(t_address,t_bool))",
+            "contract": "MultiSigWalletStorageV1",
+            "src": "contracts/MultiSigWalletStorage.sol:26"
+          },
+          {
+            "label": "_requiredApprovals",
+            "offset": 0,
+            "slot": "5",
+            "type": "t_uint256",
+            "contract": "MultiSigWalletStorageV1",
+            "src": "contracts/MultiSigWalletStorage.sol:29"
+          },
+          {
+            "label": "_transactionCooldownTime",
+            "offset": 0,
+            "slot": "6",
+            "type": "t_uint256",
+            "contract": "MultiSigWalletStorageV1",
+            "src": "contracts/MultiSigWalletStorage.sol:32"
+          },
+          {
+            "label": "_transactionExpirationTime",
+            "offset": 0,
+            "slot": "7",
+            "type": "t_uint256",
+            "contract": "MultiSigWalletStorageV1",
+            "src": "contracts/MultiSigWalletStorage.sol:35"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_address)dyn_storage": {
+            "label": "address[]",
+            "numberOfBytes": "32"
+          },
+          "t_array(t_struct(Transaction)415_storage)dyn_storage": {
+            "label": "struct IMultiSigWalletTypes.Transaction[]",
+            "numberOfBytes": "32"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_bytes_storage": {
+            "label": "bytes",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_mapping(t_address,t_bool))": {
+            "label": "mapping(uint256 => mapping(address => bool))",
+            "numberOfBytes": "32"
+          },
+          "t_struct(Transaction)415_storage": {
+            "label": "struct IMultiSigWalletTypes.Transaction",
+            "members": [
+              {
+                "label": "to",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "value",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "executed",
+                "type": "t_bool",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "cooldown",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "3"
+              },
+              {
+                "label": "expiration",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "4"
+              },
+              {
+                "label": "data",
+                "type": "t_bytes_storage",
+                "offset": 0,
+                "slot": "5"
+              }
+            ],
+            "numberOfBytes": "192"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        }
+      }
+    }
+  }
+}

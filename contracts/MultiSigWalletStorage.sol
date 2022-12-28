@@ -24,10 +24,10 @@ abstract contract MultiSigWalletStorageV1 is IMultiSigWalletTypes {
     /// @dev The number of approvals required to execute a transaction.
     uint256 internal _requiredApprovals;
 
-    /// @dev The time that need to pass before the transactions may be executed.
+    /// @dev The time that need to pass after submitting a transaction before it can be executed.
     uint256 internal _transactionCooldownTime;
 
-    /// @dev The time after which the transactions will be expired and will not be executed.
+    /// @dev The time after submitting a transaction before which it can be executed.
     uint256 internal _transactionExpirationTime;
 }
 
