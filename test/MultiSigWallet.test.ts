@@ -3,7 +3,7 @@ import { expect } from "chai";
 import { Contract, ContractFactory } from "ethers";
 import { TransactionResponse } from "@ethersproject/abstract-provider";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
-import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
+import { loadFixture, time } from "@nomicfoundation/hardhat-network-helpers";
 import { proveTx } from "../test-utils/eth";
 
 interface TestTx {
@@ -55,6 +55,7 @@ async function setUpFixture(func: any) {
 describe("Contract 'MultiSigWallet'", () => {
   const MAX_OWNERS = 32;
   const REQUIRED_APPROVALS = 2;
+  const ONE_MINUTE = 60;
 
   const ADDRESS_STUB = "0x0000000000000000000000000000000000000001";
   const TX_VALUE_STUB = 123;
@@ -69,6 +70,8 @@ describe("Contract 'MultiSigWallet'", () => {
   const EVENT_NAME_SUBMIT = "Submit";
   const EVENT_NAME_TEST = "TestEvent";
   const EVENT_NAME_CONFIGURE = "Configure";
+  const EVENT_NAME_COOLDOWN_UPDATE = "CooldownTimeUpdate";
+  const EVENT_NAME_EXPIRATION_UPDATE = "ExpirationTimeUpdate";
 
   const REVERT_MESSAGE_IF_CONTRACT_IS_ALREADY_INITIALIZED =
     "Initializable: contract is already initialized";
@@ -89,6 +92,8 @@ describe("Contract 'MultiSigWallet'", () => {
     "TransactionAlreadyExecuted";
   const REVERT_ERROR_IF_TRANSACTION_IS_NOT_APPROVED = "TransactionNotApproved";
   const REVERT_ERROR_IF_ZERO_OWNER_ADDRESS = "ZeroOwnerAddress";
+  const REVERT_ERROR_IF_TRANSACTION_ON_COOLDOWN = "CooldownNotEnded";
+  const REVERT_ERROR_IF_TRANSACTION_EXPIRED = "TransactionExpired";
 
   let tokenFactory: ContractFactory;
   let walletFactory: ContractFactory;
@@ -103,6 +108,12 @@ describe("Contract 'MultiSigWallet'", () => {
 
   const configureIface = new ethers.utils.Interface([
     "function configure(address[] memory newOwners, uint256 newRequiredApprovals)",
+  ]);
+  const updateCooldownTimeIface = new ethers.utils.Interface([
+    "function updateCooldownTime(uint256 newCooldownTime)",
+  ]);
+  const updateExpirationTimeIface = new ethers.utils.Interface([
+    "function updateExpirationTime(uint256 newExpirationTime)",
   ]);
 
   before(async () => {
@@ -166,7 +177,11 @@ describe("Contract 'MultiSigWallet'", () => {
     });
 
     it("Is reverted if the input owner array is empty", async () => {
-      const uninitializedWallet = await upgrades.deployProxy(walletFactory, [], { initializer: false });
+      const uninitializedWallet = await upgrades.deployProxy(
+        walletFactory,
+        [],
+        { initializer: false }
+      );
       await expect(
         uninitializedWallet.initialize([], 0)
       ).to.be.revertedWithCustomError(
@@ -176,7 +191,11 @@ describe("Contract 'MultiSigWallet'", () => {
     });
 
     it("Is reverted if the length of the input owner array exceeds the allowed maximum", async () => {
-      const uninitializedWallet = await upgrades.deployProxy(walletFactory, [], { initializer: false });
+      const uninitializedWallet = await upgrades.deployProxy(
+        walletFactory,
+        [],
+        { initializer: false }
+      );
       const invalidAddressArray = createAddressArray(MAX_OWNERS + 1);
       await expect(
         uninitializedWallet.initialize(invalidAddressArray, MAX_OWNERS)
@@ -187,7 +206,11 @@ describe("Contract 'MultiSigWallet'", () => {
     });
 
     it("Is reverted if the input number of required approvals is zero", async () => {
-      const uninitializedWallet = await upgrades.deployProxy(walletFactory, [], { initializer: false });
+      const uninitializedWallet = await upgrades.deployProxy(
+        walletFactory,
+        [],
+        { initializer: false }
+      );
       const requiredApprovals = 0;
       await expect(
         uninitializedWallet.initialize(ownerAddresses, requiredApprovals)
@@ -198,7 +221,11 @@ describe("Contract 'MultiSigWallet'", () => {
     });
 
     it("Is reverted if the input number of required approvals exceeds the length of the input owner array", async () => {
-      const uninitializedWallet = await upgrades.deployProxy(walletFactory, [], { initializer: false });
+      const uninitializedWallet = await upgrades.deployProxy(
+        walletFactory,
+        [],
+        { initializer: false }
+      );
       const requiredApprovals = ownerAddresses.length + 1;
       await expect(
         uninitializedWallet.initialize(ownerAddresses, requiredApprovals)
@@ -209,7 +236,11 @@ describe("Contract 'MultiSigWallet'", () => {
     });
 
     it("Is reverted if one of the input owners is the zero address", async () => {
-      const uninitializedWallet = await upgrades.deployProxy(walletFactory, [], { initializer: false });
+      const uninitializedWallet = await upgrades.deployProxy(
+        walletFactory,
+        [],
+        { initializer: false }
+      );
       const ownerAddressArray = [
         ownerAddresses[0],
         ownerAddresses[1],
@@ -225,7 +256,11 @@ describe("Contract 'MultiSigWallet'", () => {
     });
 
     it("Is reverted if there is a duplicate address in the input owner array", async () => {
-      const uninitializedWallet = await upgrades.deployProxy(walletFactory, [], { initializer: false });
+      const uninitializedWallet = await upgrades.deployProxy(
+        walletFactory,
+        [],
+        { initializer: false }
+      );
       const ownerAddressArray = [
         ownerAddresses[0],
         ownerAddresses[1],
@@ -263,12 +298,9 @@ describe("Contract 'MultiSigWallet'", () => {
         wallet.connect(owner1).submitAndApprove(wallet.address, 0, txData)
       );
       // Check that transaction is successful and event is emitted
-      await expect(
-        wallet.connect(owner2).approveAndExecute(0)
-      ).to.emit(
-        wallet,
-        EVENT_NAME_CONFIGURE
-      ).withArgs(newOwnerAddresses, REQUIRED_APPROVALS + 1);
+      await expect(wallet.connect(owner2).approveAndExecute(0))
+        .to.emit(wallet, EVENT_NAME_CONFIGURE)
+        .withArgs(newOwnerAddresses, REQUIRED_APPROVALS + 1);
       // Check that owners array is updated.
       expect(await wallet.owners()).to.deep.eq(newOwnerAddresses);
 
@@ -280,9 +312,9 @@ describe("Contract 'MultiSigWallet'", () => {
         REVERT_ERROR_IF_UNAUTHORIZED_CALLER
       );
       // Check that required approvals are updated
-      expect(
-        await wallet.requiredApprovals()
-      ).to.deep.eq(REQUIRED_APPROVALS + 1);
+      expect(await wallet.requiredApprovals()).to.deep.eq(
+        REQUIRED_APPROVALS + 1
+      );
     });
 
     it("Is reverted if caller is not a multi sig wallet", async () => {
@@ -427,10 +459,9 @@ describe("Contract 'MultiSigWallet'", () => {
           value: params.value,
         });
 
-        await expect(txResponse).to.emit(
-          wallet,
-          EVENT_NAME_DEPOSIT
-        ).withArgs(user.address, params.value);
+        await expect(txResponse)
+          .to.emit(wallet, EVENT_NAME_DEPOSIT)
+          .withArgs(user.address, params.value);
         await expect(txResponse).to.changeEtherBalances(
           [wallet, user],
           [+params.value, -params.value]
@@ -458,12 +489,9 @@ describe("Contract 'MultiSigWallet'", () => {
     it("Executes as expected and emits the correct event", async () => {
       const { wallet } = await setUpFixture(deployWallet);
 
-      await expect(
-        wallet.connect(owner1).submit(tx.to, tx.value, tx.data)
-      ).to.emit(
-        wallet,
-        EVENT_NAME_SUBMIT
-      ).withArgs(tx.id);
+      await expect(wallet.connect(owner1).submit(tx.to, tx.value, tx.data))
+        .to.emit(wallet, EVENT_NAME_SUBMIT)
+        .withArgs(tx.id);
 
       const actualTx = await wallet.getTransaction(tx.id);
       checkTxEquality(actualTx, tx);
@@ -492,14 +520,12 @@ describe("Contract 'MultiSigWallet'", () => {
         .connect(owner1)
         .submitAndApprove(tx.to, tx.value, tx.data);
 
-      await expect(txResponse).to.emit(
-        wallet,
-        EVENT_NAME_SUBMIT
-      ).withArgs(tx.id);
-      await expect(txResponse).to.emit(
-        wallet,
-        EVENT_NAME_APPROVE
-      ).withArgs(owner1.address, tx.id);
+      await expect(txResponse)
+        .to.emit(wallet, EVENT_NAME_SUBMIT)
+        .withArgs(tx.id);
+      await expect(txResponse)
+        .to.emit(wallet, EVENT_NAME_APPROVE)
+        .withArgs(owner1.address, tx.id);
 
       const actualTx = await wallet.getTransaction(tx.id);
       checkTxEquality(actualTx, tx);
@@ -528,21 +554,15 @@ describe("Contract 'MultiSigWallet'", () => {
       await proveTx(wallet.connect(owner1).submit(tx.to, tx.value, tx.data));
       expect(await wallet.getApprovalCount(tx.id)).to.eq(0);
 
-      await expect(
-        wallet.connect(owner1).approve(tx.id)
-      ).to.emit(
-        wallet,
-        EVENT_NAME_APPROVE
-      ).withArgs(owner1.address, tx.id);
+      await expect(wallet.connect(owner1).approve(tx.id))
+        .to.emit(wallet, EVENT_NAME_APPROVE)
+        .withArgs(owner1.address, tx.id);
 
       expect(await wallet.getApproval(tx.id, owner1.address)).to.eq(true);
 
-      await expect(
-        wallet.connect(owner2).approve(tx.id)
-      ).to.emit(
-        wallet,
-        EVENT_NAME_APPROVE
-      ).withArgs(owner2.address, tx.id);
+      await expect(wallet.connect(owner2).approve(tx.id))
+        .to.emit(wallet, EVENT_NAME_APPROVE)
+        .withArgs(owner2.address, tx.id);
 
       expect(await wallet.getApproval(tx.id, owner2.address)).to.eq(true);
       expect(await wallet.getApprovalCount(tx.id)).to.eq(2);
@@ -614,14 +634,12 @@ describe("Contract 'MultiSigWallet'", () => {
       const txResponse: TransactionResponse = await wallet
         .connect(owner2)
         .approveAndExecute(tx.id);
-      await expect(txResponse).to.emit(
-        wallet,
-        EVENT_NAME_APPROVE
-      ).withArgs(owner2.address, tx.id);
-      await expect(txResponse).to.emit(
-        wallet,
-        EVENT_NAME_EXECUTE
-      ).withArgs(tx.id);
+      await expect(txResponse)
+        .to.emit(wallet, EVENT_NAME_APPROVE)
+        .withArgs(owner2.address, tx.id);
+      await expect(txResponse)
+        .to.emit(wallet, EVENT_NAME_EXECUTE)
+        .withArgs(tx.id);
       tx.executed = true;
 
       expect(await wallet.getApproval(tx.id, owner2.address)).to.eq(true);
@@ -719,12 +737,9 @@ describe("Contract 'MultiSigWallet'", () => {
       );
       await proveTx(wallet.connect(owner2).approve(tx.id));
 
-      await expect(
-        wallet.connect(owner1).execute(tx.id)
-      ).to.emit(
-        wallet,
-        EVENT_NAME_EXECUTE
-      ).withArgs(tx.id);
+      await expect(wallet.connect(owner1).execute(tx.id))
+        .to.emit(wallet, EVENT_NAME_EXECUTE)
+        .withArgs(tx.id);
       tx.executed = true;
 
       const actualTx = await wallet.getTransaction(tx.id);
@@ -810,12 +825,9 @@ describe("Contract 'MultiSigWallet'", () => {
       );
       expect(await wallet.getApproval(tx.id, owner1.address)).to.eq(true);
 
-      await expect(
-        wallet.connect(owner1).revoke(tx.id)
-      ).to.emit(
-        wallet,
-        EVENT_NAME_REVOKE
-      ).withArgs(owner1.address, tx.id);
+      await expect(wallet.connect(owner1).revoke(tx.id))
+        .to.emit(wallet, EVENT_NAME_REVOKE)
+        .withArgs(owner1.address, tx.id);
 
       expect(await wallet.getApproval(tx.id, owner1.address)).to.eq(false);
     });
@@ -905,9 +917,7 @@ describe("Contract 'MultiSigWallet'", () => {
           REVERT_ERROR_IF_TRANSACTION_DOES_NOT_EXIST
         );
       } else {
-        await expect(
-          wallet.getTransaction(txs.length)
-        ).to.reverted;
+        await expect(wallet.getTransaction(txs.length)).to.reverted;
       }
 
       let actualTxs: any[];
@@ -989,14 +999,12 @@ describe("Contract 'MultiSigWallet'", () => {
         const txResponse: TransactionResponse = await wallet
           .connect(owner2)
           .approveAndExecute(tx.id);
-        await expect(txResponse).to.emit(
-          wallet,
-          EVENT_NAME_EXECUTE
-        ).withArgs(tx.id);
-        await expect(txResponse).to.emit(
-          testContractMock,
-          EVENT_NAME_TEST
-        ).withArgs(wallet.address, tx.value, amount);
+        await expect(txResponse)
+          .to.emit(wallet, EVENT_NAME_EXECUTE)
+          .withArgs(tx.id);
+        await expect(txResponse)
+          .to.emit(testContractMock, EVENT_NAME_TEST)
+          .withArgs(wallet.address, tx.value, amount);
         await expect(txResponse).to.changeEtherBalances(
           [wallet, testContractMock],
           [-tx.value, tx.value]
@@ -1051,6 +1059,162 @@ describe("Contract 'MultiSigWallet'", () => {
         ).to.revertedWithCustomError(
           wallet,
           REVERT_ERROR_IF_INTERNAL_TRANSACTION_IS_FAILED
+        );
+      });
+    });
+
+    describe("Scenarios with the cooldown and expiration", () => {
+      const tx: TestTx = {
+        id: 0,
+        to: ADDRESS_STUB,
+        value: TX_VALUE_STUB,
+        data: TX_DATA_STUB,
+      };
+
+      it("function 'updateCooldownTime()' correctly changes transactions cooldown", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        const txData = updateCooldownTimeIface.encodeFunctionData(
+          "updateCooldownTime",
+          [ONE_MINUTE]
+        );
+        await proveTx(
+          wallet.connect(owner1).submitAndApprove(wallet.address, 0, txData)
+        );
+        await expect(wallet.connect(owner2).approveAndExecute(0))
+          .to.emit(wallet, EVENT_NAME_COOLDOWN_UPDATE)
+          .withArgs(ONE_MINUTE);
+
+        await wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data);
+
+        // get the timestamp of the created transaction
+        const lastTimestamp = await time.latest();
+
+        const actualTx = await wallet.getTransaction(1);
+
+        expect(actualTx[3]).to.eq(lastTimestamp + ONE_MINUTE);
+      });
+
+      it("function 'updateCooldownTime()' is reveted if caller is not a multi sig wallet", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        await expect(
+          wallet.updateCooldownTime(ONE_MINUTE)
+        ).to.be.revertedWithCustomError(
+          wallet,
+          REVERT_ERROR_IF_UNAUTHORIZED_CALLER
+        );
+      });
+
+      it("function 'updateExpirationTime()' correctly changes transactions expiration time", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        const txData = updateExpirationTimeIface.encodeFunctionData(
+          "updateExpirationTime",
+          [ONE_MINUTE]
+        );
+        await proveTx(
+          wallet.connect(owner1).submitAndApprove(wallet.address, 0, txData)
+        );
+        await expect(wallet.connect(owner2).approveAndExecute(0))
+          .to.emit(wallet, EVENT_NAME_EXPIRATION_UPDATE)
+          .withArgs(ONE_MINUTE);
+
+        await wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data);
+
+        // get the timestamp of the created transaction
+        const lastTimestamp = await time.latest();
+
+        const actualTx = await wallet.getTransaction(1);
+
+        expect(actualTx[4]).to.eq(lastTimestamp + ONE_MINUTE);
+      });
+
+      it("function 'updateExpirationTime()' is reveted if caller is not a multi sig wallet", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        await expect(
+          wallet.updateExpirationTime(ONE_MINUTE)
+        ).to.be.revertedWithCustomError(
+          wallet,
+          REVERT_ERROR_IF_UNAUTHORIZED_CALLER
+        );
+      });
+
+      it("function 'updateExpirationTime()' is reverted if zero amount of time is passed", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        const txData = updateExpirationTimeIface.encodeFunctionData(
+          "updateExpirationTime",
+          [0]
+        );
+        await proveTx(
+          wallet.connect(owner1).submitAndApprove(wallet.address, 0, txData)
+        );
+        await expect(
+          wallet.connect(owner2).approveAndExecute(0)
+        ).to.be.revertedWithCustomError(
+          wallet,
+          REVERT_ERROR_IF_INTERNAL_TRANSACTION_IS_FAILED
+        );
+      });
+
+      it("Approve is reverted if transaction is already expired", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        const txData = updateExpirationTimeIface.encodeFunctionData(
+          "updateExpirationTime",
+          [ONE_MINUTE]
+        );
+        await proveTx(
+          wallet.connect(owner1).submitAndApprove(wallet.address, 0, txData)
+        );
+        await proveTx(wallet.connect(owner2).approveAndExecute(0));
+
+        await wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data);
+        await time.increase(61);
+        await expect(
+          wallet.connect(owner2).approve(1)
+        ).to.be.revertedWithCustomError(
+          wallet,
+          REVERT_ERROR_IF_TRANSACTION_EXPIRED
+        );
+      });
+
+      it("Execution is reverted if transaction is still on the cooldown", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        const txData = updateCooldownTimeIface.encodeFunctionData(
+          "updateCooldownTime",
+          [ONE_MINUTE]
+        );
+        await proveTx(
+          wallet.connect(owner1).submitAndApprove(wallet.address, 0, txData)
+        );
+        await proveTx(wallet.connect(owner2).approveAndExecute(0));
+
+        await wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data);
+
+        await expect(
+          wallet.connect(owner2).approveAndExecute(1)
+        ).to.be.revertedWithCustomError(
+          wallet,
+          REVERT_ERROR_IF_TRANSACTION_ON_COOLDOWN
+        );
+      });
+
+      it("Execution is reverted if transaction is already expired", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        const txData = updateExpirationTimeIface.encodeFunctionData(
+          "updateExpirationTime",
+          [ONE_MINUTE]
+        );
+        await proveTx(
+          wallet.connect(owner1).submitAndApprove(wallet.address, 0, txData)
+        );
+        await proveTx(wallet.connect(owner2).approveAndExecute(0));
+
+        await wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data);
+        await proveTx(wallet.connect(owner2).approve(1));
+        await time.increase(61);
+        await expect(
+          wallet.connect(owner2).execute(1)
+        ).to.be.revertedWithCustomError(
+          wallet,
+          REVERT_ERROR_IF_TRANSACTION_EXPIRED
         );
       });
     });
