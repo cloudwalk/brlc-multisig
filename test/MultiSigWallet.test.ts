@@ -55,6 +55,7 @@ async function setUpFixture(func: any) {
 describe("Contract 'MultiSigWallet'", () => {
   const MAX_OWNERS = 32;
   const REQUIRED_APPROVALS = 2;
+  const ONE_SECOND = 1;
   const ONE_MINUTE = 60;
   const ONE_YEAR = 31536000;
 
@@ -320,7 +321,7 @@ describe("Contract 'MultiSigWallet'", () => {
       );
     });
 
-    it("Is reverted if caller is not a multi sig wallet", async () => {
+    it("Is reverted if the caller is not the multi sig wallet itself", async () => {
       const { wallet } = await setUpFixture(deployWallet);
       await expect(
         wallet.configure([], REQUIRED_APPROVALS)
@@ -452,15 +453,8 @@ describe("Contract 'MultiSigWallet'", () => {
     });
   });
 
-  describe("Function updateCooldownTime()", () => {
-    const tx: TestTx = {
-      id: 0,
-      to: ADDRESS_STUB,
-      value: TX_VALUE_STUB,
-      data: TX_DATA_STUB,
-    };
-
-    it("Correctly changes transactions cooldown", async () => {
+  describe("Function 'updateCooldownTime()'", () => {
+    it("Correctly changes the transaction cooldown time", async () => {
       const { wallet } = await setUpFixture(deployWallet);
       const txData = updateCooldownTimeIface.encodeFunctionData(
         "updateCooldownTime",
@@ -476,7 +470,7 @@ describe("Contract 'MultiSigWallet'", () => {
       expect(await wallet.transactionCooldownTime()).to.eq(ONE_MINUTE);
     });
 
-    it("Is reveted if caller is not a multi sig wallet", async () => {
+    it("Is reverted if the caller is not the multi sig wallet itself", async () => {
       const { wallet } = await setUpFixture(deployWallet);
       await expect(
         wallet.updateCooldownTime(ONE_MINUTE)
@@ -487,8 +481,8 @@ describe("Contract 'MultiSigWallet'", () => {
     });
   });
 
-  describe("Function updateExpirationTime()", () => {
-    it("Function 'updateExpirationTime()' correctly changes transactions expiration time", async () => {
+  describe("Function 'updateExpirationTime()'", () => {
+    it("Correctly changes the transaction expiration time", async () => {
       const { wallet } = await setUpFixture(deployWallet);
       const txData = updateExpirationTimeIface.encodeFunctionData(
         "updateExpirationTime",
@@ -504,7 +498,7 @@ describe("Contract 'MultiSigWallet'", () => {
       expect(await wallet.transactionExpirationTime()).to.eq(ONE_MINUTE);
     });
 
-    it("function 'updateExpirationTime()' is reveted if caller is not a multi sig wallet", async () => {
+    it("Is reverted if the caller is not the multi sig wallet itself", async () => {
       const { wallet } = await setUpFixture(deployWallet);
       await expect(
         wallet.updateExpirationTime(ONE_MINUTE)
@@ -514,7 +508,7 @@ describe("Contract 'MultiSigWallet'", () => {
       );
     });
 
-    it("function 'updateExpirationTime()' is reverted if zero amount of time is passed", async () => {
+    it("Is reverted if the new value is zero", async () => {
       const { wallet } = await setUpFixture(deployWallet);
       const txData = updateExpirationTimeIface.encodeFunctionData(
         "updateExpirationTime",
@@ -1039,28 +1033,18 @@ describe("Contract 'MultiSigWallet'", () => {
       data: TX_DATA_STUB,
     };
 
-    it("Approve is reverted if transaction is already expired", async () => {
-      const { wallet } = await setUpFixture(deployWallet);
-      const txData = updateExpirationTimeIface.encodeFunctionData(
-        "updateExpirationTime",
-        [ONE_MINUTE]
-      );
-      await proveTx(
-        wallet.connect(owner1).submitAndApprove(wallet.address, 0, txData)
-      );
-      await proveTx(wallet.connect(owner2).approveAndExecute(0));
+    async function wait(timeoutInSeconds: number) {
+      if (network.name === "hardhat") {
+        // A virtual wait through network time shifting
+        await time.increase(timeoutInSeconds);
+      } else {
+        // A real wait through a promise
+        const timeoutInMills = timeoutInSeconds * 1000;
+        await new Promise((resolve) => setTimeout(resolve, timeoutInMills));
+      }
+    }
 
-      await wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data);
-      await time.increase(61);
-      await expect(
-        wallet.connect(owner2).approve(1)
-      ).to.be.revertedWithCustomError(
-        wallet,
-        REVERT_ERROR_IF_TRANSACTION_EXPIRED
-      );
-    });
-
-    it("Execution is reverted if transaction is still on the cooldown", async () => {
+    it("Execution of a transaction is reverted if the transaction is still on the cooldown", async () => {
       const { wallet } = await setUpFixture(deployWallet);
       const txData = updateCooldownTimeIface.encodeFunctionData(
         "updateCooldownTime",
@@ -1071,7 +1055,9 @@ describe("Contract 'MultiSigWallet'", () => {
       );
       await proveTx(wallet.connect(owner2).approveAndExecute(0));
 
-      await wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data);
+      await proveTx(
+        wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data)
+      );
 
       await expect(
         wallet.connect(owner2).approveAndExecute(1)
@@ -1081,22 +1067,66 @@ describe("Contract 'MultiSigWallet'", () => {
       );
     });
 
-    it("Execution is reverted if transaction is already expired", async () => {
+    it("Approval of a transaction is reverted if the transaction is already expired", async () => {
       const { wallet } = await setUpFixture(deployWallet);
       const txData = updateExpirationTimeIface.encodeFunctionData(
         "updateExpirationTime",
-        [ONE_MINUTE]
+        [ONE_SECOND]
       );
       await proveTx(
         wallet.connect(owner1).submitAndApprove(wallet.address, 0, txData)
       );
       await proveTx(wallet.connect(owner2).approveAndExecute(0));
 
-      await wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data);
-      await proveTx(wallet.connect(owner2).approve(1));
-      await time.increase(61);
+      await proveTx(
+        wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data)
+      );
+      await wait(2 * ONE_SECOND);
       await expect(
-        wallet.connect(owner2).execute(1)
+        wallet.connect(owner2).approve(1)
+      ).to.be.revertedWithCustomError(
+        wallet,
+        REVERT_ERROR_IF_TRANSACTION_EXPIRED
+      );
+    });
+
+    it("Execution of a transaction is reverted if the transaction is already expired", async () => {
+      const { wallet } = await setUpFixture(deployWallet);
+      let txId = 0;
+
+      // Set only one required approval
+      {
+        const requiredApprovals = 1;
+        const txData = configureIface.encodeFunctionData("configure", [
+          ownerAddresses,
+          requiredApprovals
+        ]);
+        await proveTx(
+          wallet.connect(owner1).submitAndApprove(wallet.address, 0, txData)
+        );
+        await proveTx(wallet.connect(owner2).approveAndExecute(txId))
+      }
+      ++txId;
+
+      // Set the new expiration time
+      {
+        const txData = updateExpirationTimeIface.encodeFunctionData(
+          "updateExpirationTime",
+          [ONE_SECOND]
+        );
+        await proveTx(
+          wallet.connect(owner1).submitAndApprove(wallet.address, 0, txData)
+        );
+        await proveTx(wallet.connect(owner1).execute(txId));
+      }
+      ++txId;
+
+      await proveTx(
+        wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data)
+      );
+      await wait(2 * ONE_SECOND);
+      await expect(
+        wallet.connect(owner1).execute(txId)
       ).to.be.revertedWithCustomError(
         wallet,
         REVERT_ERROR_IF_TRANSACTION_EXPIRED
