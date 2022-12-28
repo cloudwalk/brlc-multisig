@@ -56,6 +56,7 @@ describe("Contract 'MultiSigWallet'", () => {
   const MAX_OWNERS = 32;
   const REQUIRED_APPROVALS = 2;
   const ONE_MINUTE = 60;
+  const ONE_YEAR = 31536000;
 
   const ADDRESS_STUB = "0x0000000000000000000000000000000000000001";
   const TX_VALUE_STUB = 123;
@@ -167,6 +168,8 @@ describe("Contract 'MultiSigWallet'", () => {
       expect(await wallet.owners()).to.deep.eq(ownerAddresses);
       expect(await wallet.requiredApprovals()).to.eq(REQUIRED_APPROVALS);
       expect(await wallet.transactionCount()).to.eq(0);
+      expect(await wallet.transactionCooldownTime()).to.eq(0);
+      expect(await wallet.transactionExpirationTime()).to.eq(ONE_YEAR);
     });
 
     it("Is reverted if it is called a second time", async () => {
