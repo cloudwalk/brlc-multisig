@@ -54,6 +54,15 @@ contract MultiSigWallet is Initializable, MultiSigWalletStorage, IMultiSigWallet
     /// @dev The count of passed owner addresses is more than {MAX_OWNERS}.
     error OwnerCountExcess();
 
+    /// @dev The transaction with the provided id is already expired.
+    error TransactionExpired();
+
+    /// @dev The transaction with the provided id is still on the cooldown.
+    error CooldownNotEnded();
+
+    /// @dev The passed amount of time for the transactions expiration is zero.
+    error ZeroExpirationTime();
+
     // -------------------- Modifiers -----------------------------------
 
     /**
@@ -120,6 +129,7 @@ contract MultiSigWallet is Initializable, MultiSigWalletStorage, IMultiSigWallet
         onlyInitializing
     {
         _configure(newWalletOwners, newRequiredApprovals);
+        _transactionExpirationTime = 365 days;
         emit Configure(newWalletOwners, newRequiredApprovals);
     }
 
@@ -307,6 +317,33 @@ contract MultiSigWallet is Initializable, MultiSigWalletStorage, IMultiSigWallet
     }
 
     /**
+     * @dev See {IMultiSigWallet-updateCooldownTime}
+     */
+    function updateCooldownTime(uint256 newCooldownTime) public {
+        if (msg.sender != address(this)) {
+            revert UnauthorizedCaller();
+        }
+
+        _transactionCooldownTime = newCooldownTime;
+        emit CooldownTimeUpdate(newCooldownTime);
+    }
+
+    /**
+     * @dev See {IMultiSigWallet-updateExpirationTime}
+     */
+    function updateExpirationTime(uint256 newExpirationTime) public {
+        if (msg.sender != address(this)) {
+            revert UnauthorizedCaller();
+        }
+        if (newExpirationTime == 0) {
+            revert ZeroExpirationTime();
+        }
+
+        _transactionExpirationTime = newExpirationTime;
+        emit ExpirationTimeUpdate(newExpirationTime);
+    }
+
+    /**
      * @dev See {IMultiSigWallet-getApprovalCount}.
      */
     function getApprovalCount(uint256 txId) public view returns (uint256 count) {
@@ -326,7 +363,16 @@ contract MultiSigWallet is Initializable, MultiSigWalletStorage, IMultiSigWallet
         uint256 txValue,
         bytes calldata txData
     ) internal {
-        _transactions.push(Transaction({ to: receiver, value: txValue, data: txData, executed: false }));
+        _transactions.push(
+            Transaction({
+                to: receiver,
+                value: txValue,
+                executed: false,
+                cooldown: block.timestamp + _transactionCooldownTime,
+                expiration: block.timestamp + _transactionExpirationTime,
+                data: txData
+            })
+        );
         emit Submit(_transactions.length - 1);
     }
 
@@ -342,6 +388,12 @@ contract MultiSigWallet is Initializable, MultiSigWalletStorage, IMultiSigWallet
         }
         if (_transactions[txId].executed) {
             revert TransactionAlreadyExecuted();
+        }
+
+        Transaction memory transaction = _transactions[txId];
+
+        if (transaction.expiration < block.timestamp) {
+            revert TransactionExpired();
         }
 
         _approvals[txId][msg.sender] = true;
@@ -364,6 +416,13 @@ contract MultiSigWallet is Initializable, MultiSigWalletStorage, IMultiSigWallet
         }
 
         Transaction storage transaction = _transactions[txId];
+
+        if (transaction.cooldown > block.timestamp) {
+            revert CooldownNotEnded();
+        }
+        if (transaction.expiration < block.timestamp) {
+            revert TransactionExpired();
+        }
 
         transaction.executed = true;
 

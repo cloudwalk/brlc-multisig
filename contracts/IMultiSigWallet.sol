@@ -9,10 +9,12 @@ pragma solidity 0.8.16;
 interface IMultiSigWalletTypes {
     /// @dev Structure with data of a single transaction.
     struct Transaction {
-        address to;     // The address of the transaction receiver.
-        uint256 value;  // The value in native tokens to be sent along with the transaction.
-        bytes data;     // The data to be sent along with the transaction.
-        bool executed;  // The execution status of the transaction.
+        address to;         // The address of the transaction receiver.
+        uint256 value;      // The value in native tokens to be sent along with the transaction.
+        bool executed;      // The execution status of the transaction.
+        uint256 cooldown;   // The time amount before the transaction may be executed.
+        uint256 expiration; // The time amount after which the transaction will be revoked.
+        bytes data;         // The data to be sent along with the transaction.
     }
 }
 
@@ -63,6 +65,18 @@ interface IMultiSigWallet is IMultiSigWalletTypes {
      * @param newRequiredApprovals The new amount of approvals required to execute a transaction.
      */
     event Configure(address[] newOwners, uint256 newRequiredApprovals);
+
+    /**
+     * @dev Emitted when time of cooldown before the execution of transactions is changed.
+     * @param newCooldownTime The new time of the cooldown.
+     */
+    event CooldownTimeUpdate(uint256 newCooldownTime);
+
+    /**
+     * @dev Emitted when time of expiration in which the transactions can be executed is changed.
+     * @param newExpirationTime The new time of the transactions expiration.
+     */
+    event ExpirationTimeUpdate(uint256 newExpirationTime);
 
     // -------------------- Functions --------------------------------
 
@@ -143,6 +157,24 @@ interface IMultiSigWallet is IMultiSigWalletTypes {
      * @param newRequiredApprovals The amount of approvals needed to execute a transaction.
      */
     function configure(address[] memory newOwners, uint256 newRequiredApprovals) external;
+
+    /**
+     * @dev Sets new cooldown time for the transactions.
+     * 
+     * Emits a {CooldownTimeUpdate} event.
+     * 
+     * @param newCooldownTime The new time before the transactions may be executed.
+     */
+    function updateCooldownTime(uint256 newCooldownTime) external;
+
+    /**
+     * @dev Sets new time before which transactions will be expired.
+     * 
+     * Emits a {ExpirationTimeUpdate} event.
+     * 
+     * @param newExpirationTime The new time after which transactions will be expired.
+     */
+    function updateExpirationTime(uint256 newExpirationTime) external;
 
     /**
      * @dev Checks if a transaction is approved by a wallet owner.
