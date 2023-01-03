@@ -11,9 +11,9 @@ interface IMultiSigWalletTypes {
     struct Transaction {
         address to;         // The address of the transaction receiver.
         uint256 value;      // The value in native tokens to be sent along with the transaction.
-        bool executed;      // The execution status of the transaction.
         uint256 cooldown;   // The timestamp before which the transaction cannot be executed.
         uint256 expiration; // The timestamp after which the transaction cannot be executed.
+        bool executed;      // The execution status of the transaction. True if executed.
         bytes data;         // The data to be sent along with the transaction.
     }
 }
@@ -37,7 +37,7 @@ interface IMultiSigWallet is IMultiSigWalletTypes {
      * @dev Emitted when a transaction is submitted.
      * @param txId The id of the submitted transaction.
      */
-    event Submit(uint256 indexed txId);
+    event Submit(address indexed owner, uint256 indexed txId);
 
     /**
      * @dev Emitted when a transaction is approved.
@@ -57,26 +57,26 @@ interface IMultiSigWallet is IMultiSigWalletTypes {
      * @dev Emitted when a transaction is executed.
      * @param txId The id of the executed transaction.
      */
-    event Execute(uint256 indexed txId);
+    event Execute(address indexed owner, uint256 indexed txId);
 
     /**
      * @dev Emitted when a wallet owners and required approvals amount are changed.
      * @param newOwners The array of addresses that became wallet owners.
      * @param newRequiredApprovals The new amount of approvals required to execute a transaction.
      */
-    event Configure(address[] newOwners, uint256 newRequiredApprovals);
+    event ConfigureOwners(address[] newOwners, uint256 newRequiredApprovals);
 
     /**
      * @dev Emitted when the cooldown time of transactions is changed.
      * @param newCooldownTime The new time of the cooldown.
      */
-    event CooldownTimeUpdate(uint256 newCooldownTime);
+    event ConfigureCooldownTime(uint256 newCooldownTime);
 
     /**
      * @dev Emitted when expiration time of transactions is changed.
      * @param newExpirationTime The new time of the transaction expiration.
      */
-    event ExpirationTimeUpdate(uint256 newExpirationTime);
+    event CofigureExpirationTime(uint256 newExpirationTime);
 
     // -------------------- Functions --------------------------------
 
@@ -90,9 +90,9 @@ interface IMultiSigWallet is IMultiSigWalletTypes {
      * @param txData The data of the transaction.
      */
     function submit(
-        address receiver,
-        uint256 txValue,
-        bytes calldata txData
+        address to,
+        uint256 value,
+        bytes calldata data
     ) external;
 
     /**
@@ -106,9 +106,9 @@ interface IMultiSigWallet is IMultiSigWalletTypes {
      * @param txData The data of the transaction.
      */
     function submitAndApprove(
-        address receiver,
-        uint256 txValue,
-        bytes calldata txData
+        address to,
+        uint256 value,
+        bytes calldata data
     ) external;
 
     /**
@@ -156,7 +156,7 @@ interface IMultiSigWallet is IMultiSigWalletTypes {
      * @param newOwners The array of addresses to become wallet owners.
      * @param newRequiredApprovals The amount of approvals needed to execute a transaction.
      */
-    function configure(address[] memory newOwners, uint256 newRequiredApprovals) external;
+    function configureOwners(address[] memory newOwners, uint256 newRequiredApprovals) external;
 
     /**
      * @dev Sets new cooldown time of transactions.
@@ -167,7 +167,7 @@ interface IMultiSigWallet is IMultiSigWalletTypes {
      * 
      * @param newCooldownTime The new time of the cooldown.
      */
-    function updateCooldownTime(uint256 newCooldownTime) external;
+    function configureCooldownTime(uint256 newCooldownTime) external;
 
     /**
      * @dev Sets new expiration time of transactions.
@@ -178,7 +178,7 @@ interface IMultiSigWallet is IMultiSigWalletTypes {
      * 
      * @param newExpirationTime The new time of the expiration.
      */
-    function updateExpirationTime(uint256 newExpirationTime) external;
+    function configureExpirationTime(uint256 newExpirationTime) external;
 
     /**
      * @dev Checks if a transaction is approved by a wallet owner.
@@ -186,7 +186,7 @@ interface IMultiSigWallet is IMultiSigWalletTypes {
      * @param owner The address of the wallet owner to check.
      * @return True if the transaction is approved.
      */
-    function getApproval(uint256 txId, address owner) external view returns (bool);
+    function getApprovalStatus(uint256 txId, address owner) external view returns (bool);
 
     /**
      * @dev Returns the number of approvals for a transaction.
@@ -209,10 +209,7 @@ interface IMultiSigWallet is IMultiSigWalletTypes {
      * @param txId The id of the first transaction in the range to return.
      * @param limit The maximum number of transactions in the range to return.
      */
-    function getTransactions(uint256 txId, uint256 limit)
-        external
-        view
-        returns (Transaction[] memory resultTransactions);
+    function getTransactions(uint256 txId, uint256 limit) external view returns (Transaction[] memory);
 
     /**
      * @dev Returns the details of a transaction.
@@ -229,9 +226,11 @@ interface IMultiSigWallet is IMultiSigWalletTypes {
      * @dev Returns the current cooldown time of transactions.
      */
     function transactionCooldownTime() external view returns (uint256);
+    function cooldownTime() external view returns (uint256);
 
     /**
      * @dev Returns the current expiration time of transactions.
      */
     function transactionExpirationTime() external view returns (uint256);
+    function expirationTime() external view returns (uint256);
 }
