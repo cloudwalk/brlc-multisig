@@ -13,7 +13,6 @@ import { IMultiSigWallet } from "./IMultiSigWallet.sol";
  * @dev The implementation of the multi-signature wallet contract.
  */
 contract MultiSigWallet is Initializable, MultiSigWalletStorage, IMultiSigWallet {
-
     // --------------------------- Errors ---------------------------
 
     /// @dev An unauthorized account called a function.
@@ -22,17 +21,17 @@ contract MultiSigWallet is Initializable, MultiSigWalletStorage, IMultiSigWallet
     /// @dev A transaction with the specified Id does not exist.
     error TransactionNotExist();
 
-    /// @dev A transaction with the specified Id is already approved by the caller.
-    error TransactionAlreadyApproved();
-
     /// @dev A transaction with the specified Id is already executed.
     error TransactionAlreadyExecuted();
 
+    /// @dev A transaction with the specified Id must be approved by the caller.
+    error TransactionNotApproved();
+
+    /// @dev A transaction with the specified Id is already approved by the caller.
+    error TransactionAlreadyApproved();
+
     /// @dev An empty array of addresses was passed when configuring the wallet owners.
     error EmptyOwnersArray();
-
-    /// @dev An invalid number of required approvals was passed when configuring the wallet owners.
-    error InvalidRequiredApprovals();
 
     /// @dev The zero address was passed within the owners array when configuring the wallet owners.
     error ZeroOwnerAddress();
@@ -40,14 +39,14 @@ contract MultiSigWallet is Initializable, MultiSigWalletStorage, IMultiSigWallet
     /// @dev A duplicate address was passed within the owners array when configuring the wallet owners.
     error DuplicateOwnerAddress();
 
+    /// @dev An invalid number of required approvals was passed when configuring the wallet owners.
+    error InvalidRequiredApprovals();
+
     /// @dev The number of approvals for a given transaction is less than the required minimum.
     error NotEnoughApprovals();
 
     /// @dev A low level call/transaction to the transaction receiver failed.
     error InternalTransactionFailed(bytes data);
-
-    /// @dev A transaction with the specified Id must be approved by the caller.
-    error TransactionNotApproved();
 
     /// @dev A transaction with the specified Id has already expired.
     error TransactionExpired();
@@ -234,17 +233,50 @@ contract MultiSigWallet is Initializable, MultiSigWalletStorage, IMultiSigWallet
     }
 
     /**
-     * @dev See {IMultiSigWallet-owners}.
+     * @dev See {IMultiSigWallet-configureOwners}
+     *
+     * Requirements:
+     *
+     * - The array of wallet owners must not be empty.
+     * - The number of required approvals must not be zero and must not exceed the length of the wallet owners array.
      */
-    function owners() external view returns (address[] memory) {
-        return _owners;
+    function configureOwners(address[] memory newOwners, uint256 newRequiredApprovals) external onlySelfCall {
+        _configureOwners(newOwners, newRequiredApprovals);
     }
 
     /**
-     * @dev See {IMultiSigWallet-requiredApprovals}.
+     * @dev See {IMultiSigWallet-configureExpirationTime}
      */
-    function requiredApprovals() external view returns (uint256) {
-        return _requiredApprovals;
+    function configureExpirationTime(uint256 newExpirationTime) external onlySelfCall {
+        _configureExpirationTime(newExpirationTime);
+    }
+
+    /**
+     * @dev See {IMultiSigWallet-configureCooldownTime}
+     */
+    function configureCooldownTime(uint256 newCooldownTime) external onlySelfCall {
+        _configureCooldownTime(newCooldownTime);
+    }
+
+    /**
+     * @dev See {IMultiSigWallet-getApprovalCount}.
+     */
+    function getApprovalCount(uint256 txId) external view returns (uint256) {
+        return _approvalCount[txId];
+    }
+
+    /**
+     * @dev See {IMultiSigWallet-getApprovalStatus}.
+     */
+    function getApprovalStatus(uint256 txId, address owner) external view returns (bool) {
+        return _approvalStatus[txId][owner];
+    }
+
+    /**
+     * @dev See {IMultiSigWallet-getTransaction}.
+     */
+    function getTransaction(uint256 txId) external view returns (Transaction memory) {
+        return _transactions[txId];
     }
 
     /**
@@ -273,31 +305,24 @@ contract MultiSigWallet is Initializable, MultiSigWalletStorage, IMultiSigWallet
     }
 
     /**
+     * @dev See {IMultiSigWallet-owners}.
+     */
+    function owners() external view returns (address[] memory) {
+        return _owners;
+    }
+
+    /**
+     * @dev See {IMultiSigWallet-requiredApprovals}.
+     */
+    function requiredApprovals() external view returns (uint256) {
+        return _requiredApprovals;
+    }
+
+    /**
      * @dev See {IMultiSigWallet-transactionCount}.
      */
     function transactionCount() external view returns (uint256) {
         return _transactions.length;
-    }
-
-    /**
-     * @dev See {IMultiSigWallet-getTransaction}.
-     */
-    function getTransaction(uint256 txId) external view returns (Transaction memory) {
-        return _transactions[txId];
-    }
-
-    /**
-     * @dev See {IMultiSigWallet-getApprovalStatus}.
-     */
-    function getApprovalStatus(uint256 txId, address owner) external view returns (bool) {
-        return _approvalStatus[txId][owner];
-    }
-
-    /**
-     * @dev See {IMultiSigWallet-cooldownTime}.
-     */
-    function cooldownTime() external view returns (uint256) {
-        return _cooldownTime;
     }
 
     /**
@@ -308,36 +333,10 @@ contract MultiSigWallet is Initializable, MultiSigWalletStorage, IMultiSigWallet
     }
 
     /**
-     * @dev See {IMultiSigWallet-configureOwners}
-     *
-     * Requirements:
-     *
-     * - The array of wallet owners must not be empty.
-     * - The number of required approvals must not be zero and must not exceed the length of the wallet owners array.
+     * @dev See {IMultiSigWallet-cooldownTime}.
      */
-    function configureOwners(address[] memory newOwners, uint256 newRequiredApprovals) external onlySelfCall {
-        _configureOwners(newOwners, newRequiredApprovals);
-    }
-
-    /**
-     * @dev See {IMultiSigWallet-configureCooldownTime}
-     */
-    function configureCooldownTime(uint256 newCooldownTime) external onlySelfCall {
-        _configureCooldownTime(newCooldownTime);
-    }
-
-    /**
-     * @dev See {IMultiSigWallet-configureExpirationTime}
-     */
-    function configureExpirationTime(uint256 newExpirationTime) external onlySelfCall {
-        _configureExpirationTime(newExpirationTime);
-    }
-
-    /**
-     * @dev See {IMultiSigWallet-getApprovalCount}.
-     */
-    function getApprovalCount(uint256 txId) external view returns (uint256) {
-        return _approvalCount[txId];
+    function cooldownTime() external view returns (uint256) {
+        return _cooldownTime;
     }
 
     /**
@@ -494,18 +493,18 @@ contract MultiSigWallet is Initializable, MultiSigWalletStorage, IMultiSigWallet
     }
 
     /**
-     * @dev See {MultiSigWallet-configureCooldownTime}.
-     */
-    function _configureCooldownTime(uint256 newCooldownTime) internal {
-        _cooldownTime = newCooldownTime;
-        emit ConfigureCooldownTime(newCooldownTime);
-    }
-
-    /**
      * @dev See {MultiSigWallet-configureExpirationTime}.
      */
     function _configureExpirationTime(uint256 newExpirationTime) internal {
         _expirationTime = newExpirationTime;
         emit CofigureExpirationTime(newExpirationTime);
+    }
+
+    /**
+     * @dev See {MultiSigWallet-configureCooldownTime}.
+     */
+    function _configureCooldownTime(uint256 newCooldownTime) internal {
+        _cooldownTime = newCooldownTime;
+        emit ConfigureCooldownTime(newCooldownTime);
     }
 }

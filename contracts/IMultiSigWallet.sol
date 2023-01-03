@@ -24,7 +24,6 @@ interface IMultiSigWalletTypes {
  * @dev The interface of the multi-signature wallet contract.
  */
 interface IMultiSigWallet is IMultiSigWalletTypes {
-
     // --------------------------- Events ---------------------------
 
     /**
@@ -70,16 +69,16 @@ interface IMultiSigWallet is IMultiSigWalletTypes {
     event ConfigureOwners(address[] newOwners, uint256 newRequiredApprovals);
 
     /**
-     * @dev Emitted when a transaction cooldown time is configured.
-     * @param newCooldownTime The new value of the cooldown time.
-     */
-    event ConfigureCooldownTime(uint256 newCooldownTime);
-
-    /**
      * @dev Emitted when a transaction expiration time is configured.
      * @param newExpirationTime The new value of the expiration time.
      */
     event CofigureExpirationTime(uint256 newExpirationTime);
+
+    /**
+     * @dev Emitted when a transaction cooldown time is configured.
+     * @param newCooldownTime The new value of the cooldown time.
+     */
+    event ConfigureCooldownTime(uint256 newCooldownTime);
 
     // ------------------------- Functions --------------------------
 
@@ -162,6 +161,15 @@ interface IMultiSigWallet is IMultiSigWalletTypes {
     function configureOwners(address[] memory newOwners, uint256 newRequiredApprovals) external;
 
     /**
+     * @dev Configures the expiration time that will be applied to new transactions.
+     *
+     * Emits a {CofigureExpirationTime} event.
+     *
+     * @param newExpirationTime The new value of the expiration time.
+     */
+    function configureExpirationTime(uint256 newExpirationTime) external;
+
+    /**
      * @dev Configures the cooldown time that will be applied to new transactions.
      *
      * Emits a {ConfigureCooldownTime} event.
@@ -171,13 +179,10 @@ interface IMultiSigWallet is IMultiSigWalletTypes {
     function configureCooldownTime(uint256 newCooldownTime) external;
 
     /**
-     * @dev Configures the expiration time that will be applied to new transactions.
-     *
-     * Emits a {CofigureExpirationTime} event.
-     *
-     * @param newExpirationTime The new value of the expiration time.
+     * @dev Returns the number of approvals for a transaction.
+     * @param txId The Id of the transaction to check.
      */
-    function configureExpirationTime(uint256 newExpirationTime) external;
+    function getApprovalCount(uint256 txId) external view returns (uint256);
 
     /**
      * @dev Returns the approval status of a transaction.
@@ -188,10 +193,17 @@ interface IMultiSigWallet is IMultiSigWalletTypes {
     function getApprovalStatus(uint256 txId, address owner) external view returns (bool);
 
     /**
-     * @dev Returns the number of approvals for a transaction.
-     * @param txId The Id of the transaction to check.
+     * @dev Returns a single transaction.
+     * @param txId The Id of the transaction to return.
      */
-    function getApprovalCount(uint256 txId) external view returns (uint256);
+    function getTransaction(uint256 txId) external view returns (Transaction memory);
+
+    /**
+     * @dev Returns an array of transactions.
+     * @param txId The Id of the first transaction in the range to return.
+     * @param limit The maximum number of transactions in the range to return.
+     */
+    function getTransactions(uint256 txId, uint256 limit) external view returns (Transaction[] memory);
 
     /**
      * @dev Returns an array of wallet owners.
@@ -204,30 +216,17 @@ interface IMultiSigWallet is IMultiSigWalletTypes {
     function requiredApprovals() external view returns (uint256);
 
     /**
-     * @dev Returns an array of transactions.
-     * @param txId The Id of the first transaction in the range to return.
-     * @param limit The maximum number of transactions in the range to return.
-     */
-    function getTransactions(uint256 txId, uint256 limit) external view returns (Transaction[] memory);
-
-    /**
-     * @dev Returns a single transaction.
-     * @param txId The Id of the transaction to return.
-     */
-    function getTransaction(uint256 txId) external view returns (Transaction memory);
-
-    /**
      * @dev Returns the total number of transactions in the wallet.
      */
     function transactionCount() external view returns (uint256);
 
     /**
-     * @dev Returns the configured cooldown time.
-     */
-    function cooldownTime() external view returns (uint256);
-
-    /**
      * @dev Returns the configured expiration time.
      */
     function expirationTime() external view returns (uint256);
+
+    /**
+     * @dev Returns the configured cooldown time.
+     */
+    function cooldownTime() external view returns (uint256);
 }

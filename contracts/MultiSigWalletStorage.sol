@@ -18,20 +18,20 @@ abstract contract MultiSigWalletStorageV1 is IMultiSigWalletTypes {
     /// @dev The mapping of the ownership status for a given account.
     mapping(address => bool) internal _isOwner;
 
+    /// @dev The mapping of the number of approvals for a given transaction.
+    mapping(uint256 => uint256) internal _approvalCount;
+
     /// @dev The mapping of the approval status for a given owner and transaction.
     mapping(uint256 => mapping(address => bool)) internal _approvalStatus;
 
     /// @dev The number of approvals required to execute a transaction.
     uint256 internal _requiredApprovals;
 
-    /// @dev The amount of time that must elapse after a transaction is submitted before it can be executed.
-    uint256 internal _cooldownTime;
-
     /// @dev The amount of time after the cooldown period during which a transaction can be executed.
     uint256 internal _expirationTime;
 
-    /// @dev The mapping of the number of approvals for a given transaction.
-    mapping(uint256 => uint256) internal _approvalCount;
+    /// @dev The amount of time that must elapse after a transaction is submitted before it can be executed.
+    uint256 internal _cooldownTime;
 }
 
 /**
