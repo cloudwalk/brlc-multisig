@@ -3,7 +3,7 @@
 pragma solidity 0.8.16;
 
 /**
- * @title MultiSigWallet types interface
+ * @title IMultiSigWalletTypes interface
  * @author CloudWalk Inc.
  */
 interface IMultiSigWalletTypes {
@@ -21,73 +21,76 @@ interface IMultiSigWalletTypes {
 /**
  * @title MultiSigWallet interface
  * @author CloudWalk Inc.
- * @dev The interface of the multisignature wallet contract.
+ * @dev The interface of the multi-signature wallet contract.
  */
 interface IMultiSigWallet is IMultiSigWalletTypes {
-    // -------------------- Events -----------------------------------
+
+    // --------------------------- Events ---------------------------
 
     /**
      * @dev Emitted when native tokens are deposited to the contract.
-     * @param sender The address of the native token sender.
+     * @param sender The address of the native tokens sender.
      * @param amount The amount of deposited native tokens.
      */
     event Deposit(address indexed sender, uint256 amount);
 
     /**
-     * @dev Emitted when a transaction is submitted.
-     * @param txId The id of the submitted transaction.
+     * @dev Emitted when a new transaction is submitted.
+     * @param owner The address that submitted the transaction.
+     * @param txId The Id of the transaction that is submitted.
      */
     event Submit(address indexed owner, uint256 indexed txId);
 
     /**
      * @dev Emitted when a transaction is approved.
      * @param owner The address that approved the transaction.
-     * @param txId The id of the transaction that is approved.
+     * @param txId The Id of the transaction that is approved.
      */
     event Approve(address indexed owner, uint256 indexed txId);
 
     /**
      * @dev Emitted when a transaction approval is revoked.
      * @param owner The address that revoked the transaction approval.
-     * @param txId The id of the transaction whose approval is revoked.
+     * @param txId The Id of the transaction whose approval is revoked.
      */
     event Revoke(address indexed owner, uint256 indexed txId);
 
     /**
      * @dev Emitted when a transaction is executed.
-     * @param txId The id of the executed transaction.
+     * @param owner The address that executed the transaction.
+     * @param txId The Id of the transaction that is executed.
      */
     event Execute(address indexed owner, uint256 indexed txId);
 
     /**
-     * @dev Emitted when a wallet owners and required approvals amount are changed.
-     * @param newOwners The array of addresses that became wallet owners.
-     * @param newRequiredApprovals The new amount of approvals required to execute a transaction.
+     * @dev Emitted when wallet owners are configured.
+     * @param newOwners The array of addresses that became the wallet owners.
+     * @param newRequiredApprovals The new number of approvals required to execute a transaction.
      */
     event ConfigureOwners(address[] newOwners, uint256 newRequiredApprovals);
 
     /**
-     * @dev Emitted when the cooldown time of transactions is changed.
-     * @param newCooldownTime The new time of the cooldown.
+     * @dev Emitted when a transaction cooldown time is configured.
+     * @param newCooldownTime The new value of the cooldown time.
      */
     event ConfigureCooldownTime(uint256 newCooldownTime);
 
     /**
-     * @dev Emitted when expiration time of transactions is changed.
-     * @param newExpirationTime The new time of the transaction expiration.
+     * @dev Emitted when a transaction expiration time is configured.
+     * @param newExpirationTime The new value of the expiration time.
      */
     event CofigureExpirationTime(uint256 newExpirationTime);
 
-    // -------------------- Functions --------------------------------
+    // ------------------------- Functions --------------------------
 
     /**
      * @dev Submits a new transaction.
      *
      * Emits a {Submit} event.
      *
-     * @param receiver The address of the transaction receiver.
-     * @param txValue The value of the transaction in native tokens.
-     * @param txData The data of the transaction.
+     * @param to The address of the transaction receiver.
+     * @param value The value of the transaction in native tokens.
+     * @param data The input data of the transaction.
      */
     function submit(
         address to,
@@ -101,9 +104,9 @@ interface IMultiSigWallet is IMultiSigWalletTypes {
      * Emits a {Submit} event.
      * Emits an {Approve} event.
      *
-     * @param receiver The address of the transaction receiver.
-     * @param txValue The value of the transaction in native tokens.
-     * @param txData The data of the transaction.
+     * @param to The address of the transaction receiver.
+     * @param value The value of the transaction in native tokens.
+     * @param data The input data of the transaction.
      */
     function submitAndApprove(
         address to,
@@ -116,7 +119,7 @@ interface IMultiSigWallet is IMultiSigWalletTypes {
      *
      * Emits an {Approve} event.
      *
-     * @param txId The id of the transaction to approve.
+     * @param txId The Id of the transaction to approve.
      */
     function approve(uint256 txId) external;
 
@@ -126,63 +129,59 @@ interface IMultiSigWallet is IMultiSigWalletTypes {
      * Emits an {Approve} event.
      * Emits an {Execute} event.
      *
-     * @param txId The id of the transaction to approve and execute.
+     * @param txId The Id of the transaction to approve and execute.
      */
     function approveAndExecute(uint256 txId) external;
 
     /**
-     * @dev Executes a previously submitted transaction by calling its destination address.
+     * @dev Executes a previously submitted transaction.
      *
      * Emits an {Execute} event.
      *
-     * @param txId The id of the transaction to execute.
+     * @param txId The Id of the transaction to execute.
      */
     function execute(uint256 txId) external;
 
     /**
-     * @dev Revokes the approved status of a transaction previously granted by the caller.
+     * @dev Revokes a previously approved status of a transaction.
      *
      * Emits a {Revoke} event.
      *
-     * @param txId The id of the transaction to revoke the approval.
+     * @param txId The Id of the transaction to revoke the approved status.
      */
     function revoke(uint256 txId) external;
 
     /**
-     * @dev Sets wallet owners and amount of required approvals.
+     * @dev Configures wallet owners.
      *
-     * Emits a {NewWalletParamaters} event.
+     * Emits a {ConfigureOwners} event.
      *
-     * @param newOwners The array of addresses to become wallet owners.
-     * @param newRequiredApprovals The amount of approvals needed to execute a transaction.
+     * @param newOwners The array of addresses to become the wallet owners.
+     * @param newRequiredApprovals The new number of approvals required to execute a transaction.
      */
     function configureOwners(address[] memory newOwners, uint256 newRequiredApprovals) external;
 
     /**
-     * @dev Sets new cooldown time of transactions.
+     * @dev Configures the cooldown time that will be applied to new transactions.
      *
-     * The cooldown time is the time that need to pass after submitting a transaction before it can be executed.
-     * 
-     * Emits a {CooldownTimeUpdate} event.
-     * 
-     * @param newCooldownTime The new time of the cooldown.
+     * Emits a {ConfigureCooldownTime} event.
+     *
+     * @param newCooldownTime The new value of the cooldown time.
      */
     function configureCooldownTime(uint256 newCooldownTime) external;
 
     /**
-     * @dev Sets new expiration time of transactions.
+     * @dev Configures the expiration time that will be applied to new transactions.
      *
-     * The expiration time is the time after submitting a transaction before which it can be executed.
-     * 
-     * Emits a {ExpirationTimeUpdate} event.
-     * 
-     * @param newExpirationTime The new time of the expiration.
+     * Emits a {CofigureExpirationTime} event.
+     *
+     * @param newExpirationTime The new value of the expiration time.
      */
     function configureExpirationTime(uint256 newExpirationTime) external;
 
     /**
-     * @dev Checks if a transaction is approved by a wallet owner.
-     * @param txId The id of the transaction to check.
+     * @dev Returns the approval status of a transaction.
+     * @param txId The Id of the transaction to check.
      * @param owner The address of the wallet owner to check.
      * @return True if the transaction is approved.
      */
@@ -190,7 +189,7 @@ interface IMultiSigWallet is IMultiSigWalletTypes {
 
     /**
      * @dev Returns the number of approvals for a transaction.
-     * @param txId The id of the transaction to check.
+     * @param txId The Id of the transaction to check.
      */
     function getApprovalCount(uint256 txId) external view returns (uint256);
 
@@ -200,37 +199,35 @@ interface IMultiSigWallet is IMultiSigWalletTypes {
     function owners() external view returns (address[] memory);
 
     /**
-     * @dev Returns the minimum count of approvals required to execute a transaction.
+     * @dev Returns the number of approvals required to execute a transaction.
      */
     function requiredApprovals() external view returns (uint256);
 
     /**
-     * @dev Returns an array of submitted transactions.
-     * @param txId The id of the first transaction in the range to return.
+     * @dev Returns an array of transactions.
+     * @param txId The Id of the first transaction in the range to return.
      * @param limit The maximum number of transactions in the range to return.
      */
     function getTransactions(uint256 txId, uint256 limit) external view returns (Transaction[] memory);
 
     /**
-     * @dev Returns the details of a transaction.
-     * @param txId The id of the transaction to return.
+     * @dev Returns a single transaction.
+     * @param txId The Id of the transaction to return.
      */
     function getTransaction(uint256 txId) external view returns (Transaction memory);
 
     /**
-     * @dev Returns the length of the array of submitted transactions.
+     * @dev Returns the total number of transactions in the wallet.
      */
     function transactionCount() external view returns (uint256);
 
     /**
-     * @dev Returns the current cooldown time of transactions.
+     * @dev Returns the configured cooldown time.
      */
-    function transactionCooldownTime() external view returns (uint256);
     function cooldownTime() external view returns (uint256);
 
     /**
-     * @dev Returns the current expiration time of transactions.
+     * @dev Returns the configured expiration time.
      */
-    function transactionExpirationTime() external view returns (uint256);
     function expirationTime() external view returns (uint256);
 }

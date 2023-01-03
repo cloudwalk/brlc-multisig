@@ -5,7 +5,7 @@ pragma solidity 0.8.16;
 import { IMultiSigWalletTypes } from "./IMultiSigWallet.sol";
 
 /**
- * @title Multisignature wallet storage version 1
+ * @title MultiSigWallet storage - version 1
  * @author CloudWalk Inc.
  */
 abstract contract MultiSigWalletStorageV1 is IMultiSigWalletTypes {
@@ -15,21 +15,22 @@ abstract contract MultiSigWalletStorageV1 is IMultiSigWalletTypes {
     /// @dev The array of wallet transactions.
     Transaction[] internal _transactions;
 
-    /// @dev The mapping of a contract ownership status for a given account.
+    /// @dev The mapping of the ownership status for a given account.
     mapping(address => bool) internal _isOwner;
 
-    /// @dev The mapping of an approval existence from a given account and transaction id.
+    /// @dev The mapping of the approval status for a given owner and transaction.
     mapping(uint256 => mapping(address => bool)) internal _approvalStatus;
 
     /// @dev The number of approvals required to execute a transaction.
     uint256 internal _requiredApprovals;
 
-    /// @dev The time that need to pass after submitting a transaction before it can be executed.
+    /// @dev The amount of time that must elapse after a transaction is submitted before it can be executed.
     uint256 internal _cooldownTime;
 
-    /// @dev The time after submitting a transaction before which it can be executed.
+    /// @dev The amount of time after the cooldown period during which a transaction can be executed.
     uint256 internal _expirationTime;
 
+    /// @dev The mapping of the number of approvals for a given transaction.
     mapping(uint256 => uint256) internal _approvalCount;
 }
 
