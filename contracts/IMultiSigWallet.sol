@@ -3,7 +3,7 @@
 pragma solidity 0.8.16;
 
 /**
- * @title IMultiSigWalletTypes interface
+ * @title MultiSigWallet types interface
  * @author CloudWalk Inc.
  */
 interface IMultiSigWalletTypes {

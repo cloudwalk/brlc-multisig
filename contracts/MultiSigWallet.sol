@@ -57,7 +57,7 @@ contract MultiSigWallet is Initializable, MultiSigWalletStorage, IMultiSigWallet
     // ------------------------- Modifiers --------------------------
 
     /**
-     * @dev Throws if called by any account other than the wallet owner.
+     * @dev Throws if called by any account other than a wallet owner.
      */
     modifier onlyOwner() {
         if (!_isOwner[msg.sender]) {
