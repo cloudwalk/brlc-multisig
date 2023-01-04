@@ -211,6 +211,11 @@ interface IMultiSigWallet is IMultiSigWalletTypes {
     function owners() external view returns (address[] memory);
 
     /**
+     * @dev Checks if an account is configured as a wallet owner.
+     */
+    function isOwner(address account) external view returns (bool);
+
+    /**
      * @dev Returns the number of approvals required to execute a transaction.
      */
     function requiredApprovals() external view returns (uint256);

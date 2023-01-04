@@ -312,6 +312,13 @@ contract MultiSigWallet is Initializable, MultiSigWalletStorage, IMultiSigWallet
     }
 
     /**
+     * @dev See {IMultiSigWallet-isOwner}.
+     */
+    function isOwner(address account) external view returns (bool) {
+        return _isOwner[account];
+    }
+
+    /**
      * @dev See {IMultiSigWallet-requiredApprovals}.
      */
     function requiredApprovals() external view returns (uint256) {
