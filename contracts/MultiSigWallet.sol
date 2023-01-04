@@ -470,8 +470,6 @@ contract MultiSigWallet is Initializable, MultiSigWalletStorage, IMultiSigWallet
         }
 
         uint256 len;
-        address owner;
-
         if (_owners.length != 0) {
             len = _owners.length;
             for (uint256 i = 0; i < len; i++) {
@@ -479,6 +477,7 @@ contract MultiSigWallet is Initializable, MultiSigWalletStorage, IMultiSigWallet
             }
         }
 
+        address owner;
         len = newOwners.length;
         for (uint256 i = 0; i < len; i++) {
             owner = newOwners[i];
