@@ -276,6 +276,9 @@ contract MultiSigWallet is Initializable, MultiSigWalletStorage, IMultiSigWallet
      * @dev See {IMultiSigWallet-getTransaction}.
      */
     function getTransaction(uint256 txId) external view returns (Transaction memory) {
+        if (txId >= _transactions.length) {
+            revert TransactionNotExist();
+        }
         return _transactions[txId];
     }
 
