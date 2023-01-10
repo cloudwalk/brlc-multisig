@@ -72,7 +72,7 @@ interface IMultiSigWallet is IMultiSigWalletTypes {
      * @dev Emitted when a transaction expiration time is configured.
      * @param newExpirationTime The new value of the expiration time.
      */
-    event CofigureExpirationTime(uint256 newExpirationTime);
+    event ConfigureExpirationTime(uint256 newExpirationTime);
 
     /**
      * @dev Emitted when a transaction cooldown time is configured.
@@ -163,7 +163,7 @@ interface IMultiSigWallet is IMultiSigWalletTypes {
     /**
      * @dev Configures the expiration time that will be applied to new transactions.
      *
-     * Emits a {CofigureExpirationTime} event.
+     * Emits a {ConfigureExpirationTime} event.
      *
      * @param newExpirationTime The new value of the expiration time.
      */

@@ -503,7 +503,7 @@ contract MultiSigWallet is Initializable, MultiSigWalletStorage, IMultiSigWallet
      */
     function _configureExpirationTime(uint256 newExpirationTime) internal {
         _expirationTime = newExpirationTime;
-        emit CofigureExpirationTime(newExpirationTime);
+        emit ConfigureExpirationTime(newExpirationTime);
     }
 
     /**
