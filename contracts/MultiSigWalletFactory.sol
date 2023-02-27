@@ -32,23 +32,8 @@ contract MultiSigWalletFactory is Ownable {
 
     /**
      * @dev Returns an array of deployed wallets.
-     * @param id The id of the first wallet in the range to return.
-     * @param limit The maximum number of wallets in the range to return.
      */
-    function getDeployedWallets(uint256 id, uint256 limit) external view returns (address[] memory wallets) {
-        uint256 len = _wallets.length;
-        if (len <= id || limit == 0) {
-            wallets = new address[](0);
-        } else {
-            len -= id;
-            if (len > limit) {
-                len = limit;
-            }
-            wallets = new address[](len);
-            for (uint256 i = 0; i < len; i++) {
-                wallets[i] = _wallets[id];
-                id++;
-            }
-        }
+    function getDeployedWallets() external view returns (address[] memory) {
+        return _wallets;
     }
 }
