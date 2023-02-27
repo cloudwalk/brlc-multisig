@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.16;
 
-import { IMultiSigWallet } from "../IMultiSigWallet.sol";
+import { IMultiSigWallet } from "./IMultiSigWallet.sol";
 import { MultiSigWalletStorage } from "./MultiSigWalletStorage.sol";
 
 /**
