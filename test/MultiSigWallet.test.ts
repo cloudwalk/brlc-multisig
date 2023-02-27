@@ -48,7 +48,7 @@ async function setUpFixture(func: any) {
   }
 }
 
-describe("Contract 'MultiSigWallet'", () => {
+describe("Multisig wallet contracts", () => {
   const REQUIRED_APPROVALS = 2;
   const ONE_SECOND = 1;
   const ONE_MINUTE = 60;
@@ -60,6 +60,9 @@ describe("Contract 'MultiSigWallet'", () => {
     ethers.utils.toUtf8Bytes("Some data")
   );
   const DEFAULT_ERROR_DATA = "0x";
+
+  const HARDHAT_PROXY_ADMIN_ADDRESS =
+    "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
 
   const EVENT_NAME_APPROVE = "Approve";
   const EVENT_NAME_DEPOSIT = "Deposit";
@@ -91,9 +94,14 @@ describe("Contract 'MultiSigWallet'", () => {
   const REVERT_ERROR_IF_ZERO_OWNER_ADDRESS = "ZeroOwnerAddress";
   const REVERT_ERROR_IF_TRANSACTION_ON_COOLDOWN = "CooldownNotEnded";
   const REVERT_ERROR_IF_TRANSACTION_EXPIRED = "TransactionExpired";
+  const REVERT_MESSAGE_CALLER_NOT_OWNER = "Ownable: caller is not the owner";
 
   let tokenFactory: ContractFactory;
+  let walletUpgradeableFactory: ContractFactory;
   let walletFactory: ContractFactory;
+  let factoryContractFactory: ContractFactory;
+  let proxyAdminFactory: ContractFactory;
+  let mockWalletFactory: ContractFactory;
 
   let deployer: SignerWithAddress;
   let owner1: SignerWithAddress;
@@ -106,13 +114,21 @@ describe("Contract 'MultiSigWallet'", () => {
   before(async () => {
     [deployer, owner1, owner2, owner3, user] = await ethers.getSigners();
     ownerAddresses = [owner1.address, owner2.address, owner3.address];
+    walletUpgradeableFactory = await ethers.getContractFactory(
+      "MultiSigWalletUpgradeable"
+    );
     walletFactory = await ethers.getContractFactory("MultiSigWallet");
+    factoryContractFactory = await ethers.getContractFactory(
+      "MultiSigWalletFactory"
+    );
     tokenFactory = await ethers.getContractFactory("TestContractMock");
+    proxyAdminFactory = await ethers.getContractFactory("ProxyAdminMock");
+    mockWalletFactory = await ethers.getContractFactory("MultiSigWallet");
   });
 
   async function checkOwnership(
     wallet: Contract,
-    options: { ownerAddresses: string[], expectedOwnershipStatus: boolean }
+    options: { ownerAddresses: string[]; expectedOwnershipStatus: boolean }
   ) {
     for (let i = 0; i < options.ownerAddresses.length; ++i) {
       const address = options.ownerAddresses[i];
@@ -123,25 +139,39 @@ describe("Contract 'MultiSigWallet'", () => {
     }
   }
 
-  function encodeConfigureOwnersFunctionData(ownerAddresses: string[], requiredApprovals: number): string {
-    return walletFactory.interface.encodeFunctionData("configureOwners", [
-      ownerAddresses,
-      requiredApprovals,
-    ]);
+  function encodeConfigureOwnersFunctionData(
+    ownerAddresses: string[],
+    requiredApprovals: number
+  ): string {
+    return walletUpgradeableFactory.interface.encodeFunctionData(
+      "configureOwners",
+      [ownerAddresses, requiredApprovals]
+    );
   }
 
-  function encodeConfigureCooldownTimeFunctionData(cooldownTime: number): string {
-    return walletFactory.interface.encodeFunctionData(
+  function encodeConfigureCooldownTimeFunctionData(
+    cooldownTime: number
+  ): string {
+    return walletUpgradeableFactory.interface.encodeFunctionData(
       "configureCooldownTime",
       [cooldownTime]
     );
   }
 
-  function encodeConfigureExpirationTimeTimeFunctionData(expirationTime: number): string {
-    return walletFactory.interface.encodeFunctionData(
+  function encodeConfigureExpirationTimeTimeFunctionData(
+    expirationTime: number
+  ): string {
+    return walletUpgradeableFactory.interface.encodeFunctionData(
       "configureExpirationTime",
       [expirationTime]
     );
+  }
+
+  async function encodeUpgrade(proxy: string, newImplementation: string) {
+    return proxyAdminFactory.interface.encodeFunctionData("upgrade", [
+      proxy,
+      newImplementation,
+    ]);
   }
 
   async function deployTestContractMock(): Promise<{
@@ -155,8 +185,8 @@ describe("Contract 'MultiSigWallet'", () => {
     };
   }
 
-  async function deployWallet(): Promise<{ wallet: Contract }> {
-    const wallet = await upgrades.deployProxy(walletFactory, [
+  async function deployWalletUpgradeable(): Promise<{ wallet: Contract }> {
+    const wallet = await upgrades.deployProxy(walletUpgradeableFactory, [
       ownerAddresses,
       REQUIRED_APPROVALS,
     ]);
@@ -167,21 +197,240 @@ describe("Contract 'MultiSigWallet'", () => {
     };
   }
 
+  async function deployWallet(): Promise<{ wallet: Contract }> {
+    const wallet = await walletFactory.deploy(
+      ownerAddresses,
+      REQUIRED_APPROVALS
+    );
+    await wallet.deployed();
+    return {
+      wallet,
+    };
+  }
+
+  async function deployFactory(): Promise<{ factory: Contract }> {
+    const factory = await factoryContractFactory.deploy();
+    await factory.deployed();
+    return {
+      factory,
+    };
+  }
+
+  async function deployWalletContractMock(): Promise<{
+    walletContractMock: Contract;
+  }> {
+    const walletContractMock = await tokenFactory.deploy();
+    await walletContractMock.deployed();
+
+    return {
+      walletContractMock,
+    };
+  }
+
+  async function getProxyAdminContract(): Promise<{
+    admin: Contract;
+  }> {
+    const admin = await ethers.getContractAt(
+      "ProxyAdminMock",
+      HARDHAT_PROXY_ADMIN_ADDRESS
+    );
+    return {
+      admin,
+    };
+  }
+
   async function deployAllContracts(): Promise<{
     wallet: Contract;
     testContractMock: Contract;
+    admin: Contract;
+    walletContractMock: Contract;
   }> {
-    const { wallet } = await deployWallet();
+    const { wallet } = await deployWalletUpgradeable();
     const { testContractMock } = await deployTestContractMock();
+    const { admin } = await getProxyAdminContract();
+    const { walletContractMock } = await deployWalletContractMock();
 
     return {
       wallet,
       testContractMock,
+      admin,
+      walletContractMock,
     };
   }
 
-  describe("Function 'initialize()'", () => {
-    it("Configures the contract as expected", async () => {
+  describe("Contract 'MultiSigWalletUpgradeable'", () => {
+    describe("Function 'initialize()'", () => {
+      it("Configures the contract as expected", async () => {
+        const { wallet } = await setUpFixture(deployWalletUpgradeable);
+
+        expect(await wallet.owners()).to.deep.eq(ownerAddresses);
+        expect(await wallet.requiredApprovals()).to.eq(REQUIRED_APPROVALS);
+        expect(await wallet.transactionCount()).to.eq(0);
+        expect(await wallet.cooldownTime()).to.eq(0);
+        expect(await wallet.expirationTime()).to.eq(ONE_YEAR);
+        await checkOwnership(wallet, {
+          ownerAddresses,
+          expectedOwnershipStatus: true,
+        });
+      });
+
+      it("Is reverted if it is called a second time", async () => {
+        const { wallet } = await setUpFixture(deployWalletUpgradeable);
+        await expect(
+          wallet.initialize(ownerAddresses, REQUIRED_APPROVALS)
+        ).to.be.revertedWith(REVERT_MESSAGE_IF_CONTRACT_IS_ALREADY_INITIALIZED);
+      });
+
+      it("Is reverted if the input owner array is empty", async () => {
+        const uninitializedWallet = await upgrades.deployProxy(
+          walletUpgradeableFactory,
+          [],
+          { initializer: false }
+        );
+        await expect(
+          uninitializedWallet.initialize([], 0)
+        ).to.be.revertedWithCustomError(
+          walletUpgradeableFactory,
+          REVERT_ERROR_IF_EMPTY_OWNERS_ARRAY
+        );
+      });
+
+      it("Is reverted if the input number of required approvals is zero", async () => {
+        const uninitializedWallet = await upgrades.deployProxy(
+          walletUpgradeableFactory,
+          [],
+          { initializer: false }
+        );
+        const requiredApprovals = 0;
+        await expect(
+          uninitializedWallet.initialize(ownerAddresses, requiredApprovals)
+        ).to.be.revertedWithCustomError(
+          walletUpgradeableFactory,
+          REVERT_ERROR_IF_INVALID_REQUIRED_APPROVALS
+        );
+      });
+
+      it("Is reverted if the input number of required approvals exceeds the length of the input owner array", async () => {
+        const uninitializedWallet = await upgrades.deployProxy(
+          walletUpgradeableFactory,
+          [],
+          { initializer: false }
+        );
+        const requiredApprovals = ownerAddresses.length + 1;
+        await expect(
+          uninitializedWallet.initialize(ownerAddresses, requiredApprovals)
+        ).to.be.revertedWithCustomError(
+          walletUpgradeableFactory,
+          REVERT_ERROR_IF_INVALID_REQUIRED_APPROVALS
+        );
+      });
+
+      it("Is reverted if one of the input owners is the zero address", async () => {
+        const uninitializedWallet = await upgrades.deployProxy(
+          walletUpgradeableFactory,
+          [],
+          { initializer: false }
+        );
+        const ownerAddressArray = [
+          ownerAddresses[0],
+          ownerAddresses[1],
+          ethers.constants.AddressZero,
+        ];
+        const requiredApprovals = ownerAddressArray.length - 1;
+        await expect(
+          uninitializedWallet.initialize(ownerAddressArray, requiredApprovals)
+        ).to.be.revertedWithCustomError(
+          walletUpgradeableFactory,
+          REVERT_ERROR_IF_ZERO_OWNER_ADDRESS
+        );
+      });
+
+      it("Is reverted if there is a duplicate address in the input owner array", async () => {
+        const uninitializedWallet = await upgrades.deployProxy(
+          walletUpgradeableFactory,
+          [],
+          { initializer: false }
+        );
+        const ownerAddressArray = [
+          ownerAddresses[0],
+          ownerAddresses[1],
+          ownerAddresses[0],
+        ];
+        const requiredApprovals = ownerAddresses.length - 1;
+        await expect(
+          uninitializedWallet.initialize(ownerAddressArray, requiredApprovals)
+        ).to.be.revertedWithCustomError(
+          walletUpgradeableFactory,
+          REVERT_ERROR_IF_DUPLICATE_OWNER_ADDRESS
+        );
+      });
+
+      it("Is reverted for the contract implementation if it is called even for the first time", async () => {
+        const wallet = await walletUpgradeableFactory.deploy();
+        await wallet.deployed();
+
+        await expect(
+          wallet.initialize(ownerAddresses, REQUIRED_APPROVALS)
+        ).to.be.revertedWith(REVERT_MESSAGE_IF_CONTRACT_IS_ALREADY_INITIALIZED);
+      });
+    });
+
+    describe("Transferring upgradeable functionality and upgrading", () => {
+      it("Deployer can transfer ProxyAdmin ownership to wallet itself", async () => {
+        const { admin, wallet } = await setUpFixture(deployAllContracts);
+
+        await admin.transferOwnership(wallet.address);
+        const newOwner = await admin.owner();
+
+        expect(newOwner).to.eq(wallet.address);
+      });
+
+      it("Upgrades multisig to te new implementaton from multisig itself", async () => {
+        const { wallet, walletContractMock, admin } = await setUpFixture(
+          deployAllContracts
+        );
+
+        await admin.transferOwnership(wallet.address);
+        const newOwner = await admin.owner();
+
+        expect(newOwner).to.eq(wallet.address);
+
+        const upgradeData = encodeUpgrade(
+          wallet.address,
+          walletContractMock.address
+        );
+
+        await wallet
+          .connect(owner1)
+          .submitAndApprove(admin.address, 0, upgradeData);
+        await wallet.connect(owner2).approveAndExecute(0);
+
+        const newImplementation = await admin.getProxyImplementation(
+          wallet.address
+        );
+
+        expect(newImplementation).to.eq(walletContractMock.address);
+      });
+
+      it("Upgrade is reverted if caller is not a multisig", async () => {
+        const { admin, wallet, walletContractMock } = await setUpFixture(
+          deployAllContracts
+        );
+
+        await admin.transferOwnership(wallet.address);
+        const newOwner = await admin.owner();
+
+        expect(newOwner).to.eq(wallet.address);
+
+        await expect(
+          admin.upgrade(wallet.address, walletContractMock.address)
+        ).to.be.revertedWith(REVERT_MESSAGE_CALLER_NOT_OWNER);
+      });
+    });
+  });
+
+  describe("Contract 'MultiSigWallet'", async () => {
+    it("Constructor configures wallet as expected", async () => {
       const { wallet } = await setUpFixture(deployWallet);
 
       expect(await wallet.owners()).to.deep.eq(ownerAddresses);
@@ -189,66 +438,42 @@ describe("Contract 'MultiSigWallet'", () => {
       expect(await wallet.transactionCount()).to.eq(0);
       expect(await wallet.cooldownTime()).to.eq(0);
       expect(await wallet.expirationTime()).to.eq(ONE_YEAR);
-      await checkOwnership(wallet, { ownerAddresses, expectedOwnershipStatus: true });
+      await checkOwnership(wallet, {
+        ownerAddresses,
+        expectedOwnershipStatus: true,
+      });
     });
 
-    it("Is reverted if it is called a second time", async () => {
-      const { wallet } = await setUpFixture(deployWallet);
+    it("Deployment is reverted if the input owner array is empty", async () => {
       await expect(
-        wallet.initialize(ownerAddresses, REQUIRED_APPROVALS)
-      ).to.be.revertedWith(REVERT_MESSAGE_IF_CONTRACT_IS_ALREADY_INITIALIZED);
-    });
-
-    it("Is reverted if the input owner array is empty", async () => {
-      const uninitializedWallet = await upgrades.deployProxy(
-        walletFactory,
-        [],
-        { initializer: false }
-      );
-      await expect(
-        uninitializedWallet.initialize([], 0)
+        walletFactory.deploy([], REQUIRED_APPROVALS)
       ).to.be.revertedWithCustomError(
         walletFactory,
         REVERT_ERROR_IF_EMPTY_OWNERS_ARRAY
       );
     });
 
-    it("Is reverted if the input number of required approvals is zero", async () => {
-      const uninitializedWallet = await upgrades.deployProxy(
-        walletFactory,
-        [],
-        { initializer: false }
-      );
+    it("Deployment is reverted if the input number of required approvals is zero", async () => {
       const requiredApprovals = 0;
       await expect(
-        uninitializedWallet.initialize(ownerAddresses, requiredApprovals)
+        walletFactory.deploy(ownerAddresses, requiredApprovals)
       ).to.be.revertedWithCustomError(
         walletFactory,
         REVERT_ERROR_IF_INVALID_REQUIRED_APPROVALS
       );
     });
 
-    it("Is reverted if the input number of required approvals exceeds the length of the input owner array", async () => {
-      const uninitializedWallet = await upgrades.deployProxy(
-        walletFactory,
-        [],
-        { initializer: false }
-      );
+    it("Deployment is reverted if the input number of required approvals exceeds the length of the input owner array", async () => {
       const requiredApprovals = ownerAddresses.length + 1;
       await expect(
-        uninitializedWallet.initialize(ownerAddresses, requiredApprovals)
+        walletFactory.deploy(ownerAddresses, requiredApprovals)
       ).to.be.revertedWithCustomError(
         walletFactory,
         REVERT_ERROR_IF_INVALID_REQUIRED_APPROVALS
       );
     });
 
-    it("Is reverted if one of the input owners is the zero address", async () => {
-      const uninitializedWallet = await upgrades.deployProxy(
-        walletFactory,
-        [],
-        { initializer: false }
-      );
+    it("Deployment is reverted if one of the input owners is the zero address", async () => {
       const ownerAddressArray = [
         ownerAddresses[0],
         ownerAddresses[1],
@@ -256,19 +481,14 @@ describe("Contract 'MultiSigWallet'", () => {
       ];
       const requiredApprovals = ownerAddressArray.length - 1;
       await expect(
-        uninitializedWallet.initialize(ownerAddressArray, requiredApprovals)
+        walletFactory.deploy(ownerAddressArray, requiredApprovals)
       ).to.be.revertedWithCustomError(
         walletFactory,
         REVERT_ERROR_IF_ZERO_OWNER_ADDRESS
       );
     });
 
-    it("Is reverted if there is a duplicate address in the input owner array", async () => {
-      const uninitializedWallet = await upgrades.deployProxy(
-        walletFactory,
-        [],
-        { initializer: false }
-      );
+    it("Deployment is reverted if there is a duplicate address in the input owner array", async () => {
       const ownerAddressArray = [
         ownerAddresses[0],
         ownerAddresses[1],
@@ -276,954 +496,1111 @@ describe("Contract 'MultiSigWallet'", () => {
       ];
       const requiredApprovals = ownerAddresses.length - 1;
       await expect(
-        uninitializedWallet.initialize(ownerAddressArray, requiredApprovals)
+        walletFactory.deploy(ownerAddressArray, requiredApprovals)
       ).to.be.revertedWithCustomError(
         walletFactory,
         REVERT_ERROR_IF_DUPLICATE_OWNER_ADDRESS
       );
     });
+  });
 
-    it("Is reverted for the contract implementation if it is called even for the first time", async () => {
-      const wallet = await walletFactory.deploy();
-      await wallet.deployed();
+  describe("Contract 'MultiSigWalletFactory'", () => {
+    it("Correctly configures owner with deployment", async () => {
+      const { factory } = await setUpFixture(deployFactory);
 
-      await expect(
-        wallet.initialize(ownerAddresses, REQUIRED_APPROVALS)
-      ).to.be.revertedWith(REVERT_MESSAGE_IF_CONTRACT_IS_ALREADY_INITIALIZED);
+      await expect(await factory.owner()).to.eq(deployer.address);
+    });
+
+    describe("Function 'deployNewWallet()'", () => {
+      it("Creates new wallet instance with selected parameters", async () => {
+        const { factory } = await setUpFixture(deployFactory);
+
+        await factory.deployNewWallet(ownerAddresses, REQUIRED_APPROVALS);
+        const walletsArray = await factory.getDeployedWallets();
+        const wallet = await ethers.getContractAt(
+          "MultiSigWallet",
+          walletsArray[0]
+        );
+        expect(await wallet.owners()).to.deep.eq(ownerAddresses);
+        expect(await wallet.requiredApprovals()).to.eq(REQUIRED_APPROVALS);
+        expect(await wallet.transactionCount()).to.eq(0);
+        expect(await wallet.cooldownTime()).to.eq(0);
+        expect(await wallet.expirationTime()).to.eq(ONE_YEAR);
+      });
+
+      it("Is reverted if the input owner array is empty", async () => {
+        const { factory } = await setUpFixture(deployFactory);
+
+        await expect(
+          factory.deployNewWallet([], REQUIRED_APPROVALS)
+        ).to.be.revertedWithCustomError(
+          walletFactory,
+          REVERT_ERROR_IF_EMPTY_OWNERS_ARRAY
+        );
+      });
+
+      it("Is reverted if the input number of required approvals is zero", async () => {
+        const { factory } = await setUpFixture(deployFactory);
+
+        const requiredApprovals = 0;
+        await expect(
+          factory.deployNewWallet(ownerAddresses, requiredApprovals)
+        ).to.be.revertedWithCustomError(
+          walletFactory,
+          REVERT_ERROR_IF_INVALID_REQUIRED_APPROVALS
+        );
+      });
+
+      it("Is reverted if the input number of required approvals exceeds the length of the input owner array", async () => {
+        const { factory } = await setUpFixture(deployFactory);
+
+        const requiredApprovals = ownerAddresses.length + 1;
+        await expect(
+          factory.deployNewWallet(ownerAddresses, requiredApprovals)
+        ).to.be.revertedWithCustomError(
+          walletFactory,
+          REVERT_ERROR_IF_INVALID_REQUIRED_APPROVALS
+        );
+      });
+
+      it("Is reverted if one of the input owners is the zero address", async () => {
+        const { factory } = await setUpFixture(deployFactory);
+        const ownerAddressArray = [
+          ownerAddresses[0],
+          ownerAddresses[1],
+          ethers.constants.AddressZero,
+        ];
+        const requiredApprovals = ownerAddressArray.length - 1;
+
+        await expect(
+          factory.deployNewWallet(ownerAddressArray, requiredApprovals)
+        ).to.be.revertedWithCustomError(
+          walletFactory,
+          REVERT_ERROR_IF_ZERO_OWNER_ADDRESS
+        );
+      });
+
+      it("Deployment is reverted if there is a duplicate address in the input owner array", async () => {
+        const { factory } = await setUpFixture(deployFactory);
+        const ownerAddressArray = [
+          ownerAddresses[0],
+          ownerAddresses[1],
+          ethers.constants.AddressZero,
+        ];
+        const requiredApprovals = ownerAddresses.length - 1;
+        await expect(
+          factory.deployNewWallet(ownerAddressArray, requiredApprovals)
+        ).to.be.revertedWithCustomError(
+          walletFactory,
+          REVERT_ERROR_IF_ZERO_OWNER_ADDRESS
+        );
+      });
     });
   });
 
-  describe("Function 'configureOwners()'", () => {
-    it("Updates list of owners and removes old owners", async () => {
-      const { wallet } = await setUpFixture(deployWallet);
-      const newOwnerAddresses = [owner1.address, owner2.address, user.address];
-      const txData = encodeConfigureOwnersFunctionData(newOwnerAddresses, REQUIRED_APPROVALS + 1);
-
-      await proveTx(
-        wallet.connect(owner1).submitAndApprove(wallet.address, 0, txData)
-      );
-      // Check that transaction is successful and event is emitted
-      await expect(wallet.connect(owner2).approveAndExecute(0))
-        .to.emit(wallet, EVENT_NAME_CONFIGURE_OWNERS)
-        .withArgs(newOwnerAddresses, REQUIRED_APPROVALS + 1);
-      // Check that owners array is updated.
-      expect(await wallet.owners()).to.deep.eq(newOwnerAddresses);
-
-      // Check statuses of owners
-      await checkOwnership(
-        wallet,
-        { ownerAddresses: newOwnerAddresses, expectedOwnershipStatus: true }
-      );
-      await checkOwnership(
-        wallet,
-        { ownerAddresses: [owner3.address], expectedOwnershipStatus: false }
-      );
-    });
-
-    it("Is reverted if the caller is not the multi sig wallet itself", async () => {
-      const { wallet } = await setUpFixture(deployWallet);
-      await expect(
-        wallet.configureOwners([], REQUIRED_APPROVALS)
-      ).to.be.revertedWithCustomError(
-        wallet,
-        REVERT_ERROR_IF_UNAUTHORIZED_CALLER
-      );
-    });
-
-    it("Is reverted if the input owner array is empty", async () => {
-      const { wallet } = await setUpFixture(deployWallet);
-      const txData = encodeConfigureOwnersFunctionData([], REQUIRED_APPROVALS);
-
-      await proveTx(
-        wallet.connect(owner1).submitAndApprove(wallet.address, 0, txData)
-      );
-      await expect(
-        wallet.connect(owner2).approveAndExecute(0)
-      ).to.be.revertedWithCustomError(
-        wallet,
-        REVERT_ERROR_IF_INTERNAL_TRANSACTION_IS_FAILED
-      ).withArgs(
-        wallet.interface.encodeErrorResult(REVERT_ERROR_IF_EMPTY_OWNERS_ARRAY)
-      );
-    });
-
-    it("Is reverted if the input number of required approvals is zero", async () => {
-      const { wallet } = await setUpFixture(deployWallet);
-      const invalidApprovals = 0;
-      const txData = encodeConfigureOwnersFunctionData(ownerAddresses, invalidApprovals);
-
-      await proveTx(
-        wallet.connect(owner1).submitAndApprove(wallet.address, 0, txData)
-      );
-      await expect(
-        wallet.connect(owner2).approveAndExecute(0)
-      ).to.be.revertedWithCustomError(
-        wallet,
-        REVERT_ERROR_IF_INTERNAL_TRANSACTION_IS_FAILED
-      ).withArgs(
-        wallet.interface.encodeErrorResult(REVERT_ERROR_IF_INVALID_REQUIRED_APPROVALS)
-      );
-    });
-
-    it("Is reverted if the input number of required approvals exceeds the length of the input owner array", async () => {
-      const { wallet } = await setUpFixture(deployWallet);
-      const invalidApprovals = ownerAddresses.length + 1;
-      const txData = encodeConfigureOwnersFunctionData(ownerAddresses, invalidApprovals);
-
-      await proveTx(
-        wallet.connect(owner1).submitAndApprove(wallet.address, 0, txData)
-      );
-      await expect(
-        wallet.connect(owner2).approveAndExecute(0)
-      ).to.be.revertedWithCustomError(
-        wallet,
-        REVERT_ERROR_IF_INTERNAL_TRANSACTION_IS_FAILED
-      ).withArgs(
-        wallet.interface.encodeErrorResult(REVERT_ERROR_IF_INVALID_REQUIRED_APPROVALS)
-      );
-    });
-
-    it("Is reverted if one of the input owners is the zero address", async () => {
-      const { wallet } = await setUpFixture(deployWallet);
-      const invalidAddresses: string[] = [
-        ownerAddresses[0],
-        ownerAddresses[1],
-        ethers.constants.AddressZero,
-      ];
-      const txData = encodeConfigureOwnersFunctionData(invalidAddresses, REQUIRED_APPROVALS);
-
-      await proveTx(
-        wallet.connect(owner1).submitAndApprove(wallet.address, 0, txData)
-      );
-      await expect(
-        wallet.connect(owner2).approveAndExecute(0)
-      ).to.be.revertedWithCustomError(
-        wallet,
-        REVERT_ERROR_IF_INTERNAL_TRANSACTION_IS_FAILED
-      ).withArgs(
-        wallet.interface.encodeErrorResult(REVERT_ERROR_IF_ZERO_OWNER_ADDRESS)
-      );
-    });
-
-    it("Is reverted if there is a duplicate address in the input owner array", async () => {
-      const { wallet } = await setUpFixture(deployWallet);
-      const invalidAddress = [
-        ownerAddresses[0],
-        ownerAddresses[1],
-        ownerAddresses[0],
-      ];
-      const txData = encodeConfigureOwnersFunctionData(invalidAddress, REQUIRED_APPROVALS);
-
-      await proveTx(
-        wallet.connect(owner1).submitAndApprove(wallet.address, 0, txData)
-      );
-      await expect(
-        wallet.connect(owner2).approveAndExecute(0)
-      ).to.be.revertedWithCustomError(
-        wallet,
-        REVERT_ERROR_IF_INTERNAL_TRANSACTION_IS_FAILED
-      ).withArgs(
-        wallet.interface.encodeErrorResult(REVERT_ERROR_IF_DUPLICATE_OWNER_ADDRESS)
-      );
-    });
-  });
-
-  describe("Function 'configureCooldownTime()'", () => {
-    it("Correctly changes the transaction cooldown time", async () => {
-      const { wallet } = await setUpFixture(deployWallet);
-      const txData = encodeConfigureCooldownTimeFunctionData(ONE_MINUTE);
-
-      await proveTx(
-        wallet.connect(owner1).submitAndApprove(wallet.address, 0, txData)
-      );
-      await expect(wallet.connect(owner2).approveAndExecute(0))
-        .to.emit(wallet, EVENT_NAME_CONFIGURE_COOLDOWN_TIME)
-        .withArgs(ONE_MINUTE);
-
-      expect(await wallet.cooldownTime()).to.eq(ONE_MINUTE);
-    });
-
-    it("Is reverted if the caller is not the multi sig wallet itself", async () => {
-      const { wallet } = await setUpFixture(deployWallet);
-      await expect(
-        wallet.configureCooldownTime(ONE_MINUTE)
-      ).to.be.revertedWithCustomError(
-        wallet,
-        REVERT_ERROR_IF_UNAUTHORIZED_CALLER
-      );
-    });
-  });
-
-  describe("Function 'configureExpirationTime()'", () => {
-    it("Correctly changes the transaction expiration time", async () => {
-      const { wallet } = await setUpFixture(deployWallet);
-      const txData = encodeConfigureExpirationTimeTimeFunctionData(ONE_MINUTE);
-
-      await proveTx(
-        wallet.connect(owner1).submitAndApprove(wallet.address, 0, txData)
-      );
-      await expect(wallet.connect(owner2).approveAndExecute(0))
-        .to.emit(wallet, EVENT_NAME_CONFIGURE_EXPIRATION_TIME)
-        .withArgs(ONE_MINUTE);
-
-      expect(await wallet.expirationTime()).to.eq(ONE_MINUTE);
-    });
-
-    it("Is reverted if the caller is not the multi sig wallet itself", async () => {
-      const { wallet } = await setUpFixture(deployWallet);
-      await expect(
-        wallet.configureExpirationTime(ONE_MINUTE)
-      ).to.be.revertedWithCustomError(
-        wallet,
-        REVERT_ERROR_IF_UNAUTHORIZED_CALLER
-      );
-    });
-  });
-
-  describe("Function 'receive()'", () => {
-    describe("Executes as expected and emits the correct event when it is called indirectly with", () => {
-      async function checkExecutionOfReceive(params: { value: number }) {
+  describe("Contract 'MultiSigWalletBase'", () => {
+    describe("Function 'configureOwners()'", () => {
+      it("Updates list of owners and removes old owners", async () => {
         const { wallet } = await setUpFixture(deployWallet);
+        const newOwnerAddresses = [
+          owner1.address,
+          owner2.address,
+          user.address,
+        ];
+        const txData = encodeConfigureOwnersFunctionData(
+          newOwnerAddresses,
+          REQUIRED_APPROVALS + 1
+        );
 
-        const txResponse = await user.sendTransaction({
-          to: wallet.address,
-          value: params.value,
+        await proveTx(
+          wallet.connect(owner1).submitAndApprove(wallet.address, 0, txData)
+        );
+        // Check that transaction is successful and event is emitted
+        await expect(wallet.connect(owner2).approveAndExecute(0))
+          .to.emit(wallet, EVENT_NAME_CONFIGURE_OWNERS)
+          .withArgs(newOwnerAddresses, REQUIRED_APPROVALS + 1);
+        // Check that owners array is updated.
+        expect(await wallet.owners()).to.deep.eq(newOwnerAddresses);
+
+        // Check statuses of owners
+        await checkOwnership(wallet, {
+          ownerAddresses: newOwnerAddresses,
+          expectedOwnershipStatus: true,
+        });
+        await checkOwnership(wallet, {
+          ownerAddresses: [owner3.address],
+          expectedOwnershipStatus: false,
+        });
+      });
+
+      it("Is reverted if the caller is not the multi sig wallet itself", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        await expect(
+          wallet.configureOwners([], REQUIRED_APPROVALS)
+        ).to.be.revertedWithCustomError(
+          wallet,
+          REVERT_ERROR_IF_UNAUTHORIZED_CALLER
+        );
+      });
+
+      it("Is reverted if the input owner array is empty", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        const txData = encodeConfigureOwnersFunctionData(
+          [],
+          REQUIRED_APPROVALS
+        );
+
+        await proveTx(
+          wallet.connect(owner1).submitAndApprove(wallet.address, 0, txData)
+        );
+        await expect(wallet.connect(owner2).approveAndExecute(0))
+          .to.be.revertedWithCustomError(
+            wallet,
+            REVERT_ERROR_IF_INTERNAL_TRANSACTION_IS_FAILED
+          )
+          .withArgs(
+            wallet.interface.encodeErrorResult(
+              REVERT_ERROR_IF_EMPTY_OWNERS_ARRAY
+            )
+          );
+      });
+
+      it("Is reverted if the input number of required approvals is zero", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        const invalidApprovals = 0;
+        const txData = encodeConfigureOwnersFunctionData(
+          ownerAddresses,
+          invalidApprovals
+        );
+
+        await proveTx(
+          wallet.connect(owner1).submitAndApprove(wallet.address, 0, txData)
+        );
+        await expect(wallet.connect(owner2).approveAndExecute(0))
+          .to.be.revertedWithCustomError(
+            wallet,
+            REVERT_ERROR_IF_INTERNAL_TRANSACTION_IS_FAILED
+          )
+          .withArgs(
+            wallet.interface.encodeErrorResult(
+              REVERT_ERROR_IF_INVALID_REQUIRED_APPROVALS
+            )
+          );
+      });
+
+      it("Is reverted if the input number of required approvals exceeds the length of the input owner array", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        const invalidApprovals = ownerAddresses.length + 1;
+        const txData = encodeConfigureOwnersFunctionData(
+          ownerAddresses,
+          invalidApprovals
+        );
+
+        await proveTx(
+          wallet.connect(owner1).submitAndApprove(wallet.address, 0, txData)
+        );
+        await expect(wallet.connect(owner2).approveAndExecute(0))
+          .to.be.revertedWithCustomError(
+            wallet,
+            REVERT_ERROR_IF_INTERNAL_TRANSACTION_IS_FAILED
+          )
+          .withArgs(
+            wallet.interface.encodeErrorResult(
+              REVERT_ERROR_IF_INVALID_REQUIRED_APPROVALS
+            )
+          );
+      });
+
+      it("Is reverted if one of the input owners is the zero address", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        const invalidAddresses: string[] = [
+          ownerAddresses[0],
+          ownerAddresses[1],
+          ethers.constants.AddressZero,
+        ];
+        const txData = encodeConfigureOwnersFunctionData(
+          invalidAddresses,
+          REQUIRED_APPROVALS
+        );
+
+        await proveTx(
+          wallet.connect(owner1).submitAndApprove(wallet.address, 0, txData)
+        );
+        await expect(wallet.connect(owner2).approveAndExecute(0))
+          .to.be.revertedWithCustomError(
+            wallet,
+            REVERT_ERROR_IF_INTERNAL_TRANSACTION_IS_FAILED
+          )
+          .withArgs(
+            wallet.interface.encodeErrorResult(
+              REVERT_ERROR_IF_ZERO_OWNER_ADDRESS
+            )
+          );
+      });
+
+      it("Is reverted if there is a duplicate address in the input owner array", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        const invalidAddress = [
+          ownerAddresses[0],
+          ownerAddresses[1],
+          ownerAddresses[0],
+        ];
+        const txData = encodeConfigureOwnersFunctionData(
+          invalidAddress,
+          REQUIRED_APPROVALS
+        );
+
+        await proveTx(
+          wallet.connect(owner1).submitAndApprove(wallet.address, 0, txData)
+        );
+        await expect(wallet.connect(owner2).approveAndExecute(0))
+          .to.be.revertedWithCustomError(
+            wallet,
+            REVERT_ERROR_IF_INTERNAL_TRANSACTION_IS_FAILED
+          )
+          .withArgs(
+            wallet.interface.encodeErrorResult(
+              REVERT_ERROR_IF_DUPLICATE_OWNER_ADDRESS
+            )
+          );
+      });
+    });
+
+    describe("Function 'configureCooldownTime()'", () => {
+      it("Correctly changes the transaction cooldown time", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        const txData = encodeConfigureCooldownTimeFunctionData(ONE_MINUTE);
+
+        await proveTx(
+          wallet.connect(owner1).submitAndApprove(wallet.address, 0, txData)
+        );
+        await expect(wallet.connect(owner2).approveAndExecute(0))
+          .to.emit(wallet, EVENT_NAME_CONFIGURE_COOLDOWN_TIME)
+          .withArgs(ONE_MINUTE);
+
+        expect(await wallet.cooldownTime()).to.eq(ONE_MINUTE);
+      });
+
+      it("Is reverted if the caller is not the multi sig wallet itself", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        await expect(
+          wallet.configureCooldownTime(ONE_MINUTE)
+        ).to.be.revertedWithCustomError(
+          wallet,
+          REVERT_ERROR_IF_UNAUTHORIZED_CALLER
+        );
+      });
+    });
+
+    describe("Function 'configureExpirationTime()'", () => {
+      it("Correctly changes the transaction expiration time", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        const txData =
+          encodeConfigureExpirationTimeTimeFunctionData(ONE_MINUTE);
+
+        await proveTx(
+          wallet.connect(owner1).submitAndApprove(wallet.address, 0, txData)
+        );
+        await expect(wallet.connect(owner2).approveAndExecute(0))
+          .to.emit(wallet, EVENT_NAME_CONFIGURE_EXPIRATION_TIME)
+          .withArgs(ONE_MINUTE);
+
+        expect(await wallet.expirationTime()).to.eq(ONE_MINUTE);
+      });
+
+      it("Is reverted if the caller is not the multi sig wallet itself", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        await expect(
+          wallet.configureExpirationTime(ONE_MINUTE)
+        ).to.be.revertedWithCustomError(
+          wallet,
+          REVERT_ERROR_IF_UNAUTHORIZED_CALLER
+        );
+      });
+    });
+
+    describe("Function 'receive()'", () => {
+      describe("Executes as expected and emits the correct event when it is called indirectly with", () => {
+        async function checkExecutionOfReceive(params: { value: number }) {
+          const { wallet } = await setUpFixture(deployWallet);
+
+          const txResponse = await user.sendTransaction({
+            to: wallet.address,
+            value: params.value,
+          });
+
+          await expect(txResponse)
+            .to.emit(wallet, EVENT_NAME_DEPOSIT)
+            .withArgs(user.address, params.value);
+          await expect(txResponse).to.changeEtherBalances(
+            [wallet, user],
+            [+params.value, -params.value]
+          );
+        }
+
+        it("A nonzero value", async () => {
+          await checkExecutionOfReceive({ value: TX_VALUE_STUB });
         });
 
-        await expect(txResponse)
-          .to.emit(wallet, EVENT_NAME_DEPOSIT)
-          .withArgs(user.address, params.value);
-        await expect(txResponse).to.changeEtherBalances(
-          [wallet, user],
-          [+params.value, -params.value]
-        );
-      }
-
-      it("A nonzero value", async () => {
-        await checkExecutionOfReceive({ value: TX_VALUE_STUB });
-      });
-
-      it("The zero value", async () => {
-        await checkExecutionOfReceive({ value: 0 });
+        it("The zero value", async () => {
+          await checkExecutionOfReceive({ value: 0 });
+        });
       });
     });
-  });
 
-  describe("Function 'submit()'", () => {
-    const tx: TestTx = {
-      id: 0,
-      to: ADDRESS_STUB,
-      value: TX_VALUE_STUB,
-      data: TX_DATA_STUB,
-    };
-
-    it("Executes as expected and emits the correct event", async () => {
-      const { wallet } = await setUpFixture(deployWallet);
-
-      await expect(wallet.connect(owner1).submit(tx.to, tx.value, tx.data))
-        .to.emit(wallet, EVENT_NAME_SUBMIT)
-        .withArgs(owner1.address, tx.id);
-
-      const actualTx = await wallet.getTransaction(tx.id);
-      checkTxEquality(actualTx, tx);
-      expect(await wallet.transactionCount()).to.eq(1);
-    });
-
-    it("Is reverted if it is called not by an owner", async () => {
-      const { wallet } = await setUpFixture(deployWallet);
-      await expect(
-        wallet.submit(tx.to, tx.value, tx.data)
-      ).to.revertedWithCustomError(wallet, REVERT_ERROR_IF_UNAUTHORIZED_CALLER);
-    });
-  });
-
-  describe("Function 'submitAndApprove()'", () => {
-    const tx: TestTx = {
-      id: 0,
-      to: ADDRESS_STUB,
-      value: TX_VALUE_STUB,
-      data: TX_DATA_STUB,
-    };
-
-    it("Executes as expected and emits the correct events", async () => {
-      const { wallet } = await setUpFixture(deployWallet);
-      const txResponse: TransactionResponse = wallet
-        .connect(owner1)
-        .submitAndApprove(tx.to, tx.value, tx.data);
-
-      await expect(txResponse)
-        .to.emit(wallet, EVENT_NAME_SUBMIT)
-        .withArgs(owner1.address, tx.id);
-      await expect(txResponse)
-        .to.emit(wallet, EVENT_NAME_APPROVE)
-        .withArgs(owner1.address, tx.id);
-
-      const actualTx = await wallet.getTransaction(tx.id);
-      checkTxEquality(actualTx, tx);
-      expect(await wallet.transactionCount()).to.eq(1);
-      expect(await wallet.getApprovalStatus(tx.id, owner1.address)).to.eq(true);
-    });
-
-    it("Is reverted if it is called not by an owner", async () => {
-      const { wallet } = await setUpFixture(deployWallet);
-      await expect(
-        wallet.submitAndApprove(tx.to, tx.value, tx.data)
-      ).to.revertedWithCustomError(wallet, REVERT_ERROR_IF_UNAUTHORIZED_CALLER);
-    });
-  });
-
-  describe("Function 'approve()'", () => {
-    const tx: TestTx = {
-      id: 0,
-      to: ADDRESS_STUB,
-      value: 0,
-      data: TX_DATA_STUB,
-    };
-
-    it("Executes as expected and emits the correct event", async () => {
-      let { wallet } = await setUpFixture(deployWallet);
-      await proveTx(wallet.connect(owner1).submit(tx.to, tx.value, tx.data));
-      expect(await wallet.getApprovalCount(tx.id)).to.eq(0);
-
-      await expect(wallet.connect(owner1).approve(tx.id))
-        .to.emit(wallet, EVENT_NAME_APPROVE)
-        .withArgs(owner1.address, tx.id);
-
-      expect(await wallet.getApprovalStatus(tx.id, owner1.address)).to.eq(true);
-
-      await expect(wallet.connect(owner2).approve(tx.id))
-        .to.emit(wallet, EVENT_NAME_APPROVE)
-        .withArgs(owner2.address, tx.id);
-
-      expect(await wallet.getApprovalStatus(tx.id, owner2.address)).to.eq(true);
-      expect(await wallet.getApprovalCount(tx.id)).to.eq(2);
-    });
-
-    it("Is reverted if it is called not by an owner", async () => {
-      const { wallet } = await setUpFixture(deployWallet);
-      await expect(wallet.approve(tx.id)).to.revertedWithCustomError(
-        wallet,
-        REVERT_ERROR_IF_UNAUTHORIZED_CALLER
-      );
-    });
-
-    it("Is reverted if the transaction does not exist", async () => {
-      const { wallet } = await setUpFixture(deployWallet);
-      await expect(
-        wallet.connect(owner1).approve(tx.id)
-      ).to.revertedWithCustomError(
-        wallet,
-        REVERT_ERROR_IF_TRANSACTION_DOES_NOT_EXIST
-      );
-    });
-
-    it("Is reverted if the transaction is already executed", async () => {
-      const { wallet } = await setUpFixture(deployWallet);
-      await proveTx(
-        wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data)
-      );
-      await proveTx(wallet.connect(owner2).approveAndExecute(tx.id));
-
-      await expect(
-        wallet.connect(owner3).approve(tx.id)
-      ).to.revertedWithCustomError(
-        wallet,
-        REVERT_ERROR_IF_TRANSACTION_IS_ALREADY_EXECUTED
-      );
-    });
-
-    it("Is reverted if the transaction is already approved by the same owner", async () => {
-      const { wallet } = await setUpFixture(deployWallet);
-      await proveTx(
-        wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data)
-      );
-
-      await expect(
-        wallet.connect(owner1).approve(tx.id)
-      ).to.revertedWithCustomError(
-        wallet,
-        REVERT_ERROR_IF_TRANSACTION_IS_ALREADY_APPROVED
-      );
-    });
-  });
-
-  describe("Function 'approveAndExecute()'", () => {
-    const tx: TestTx = {
-      id: 0,
-      to: ADDRESS_STUB,
-      value: 0,
-      data: TX_DATA_STUB,
-    };
-
-    it("Executes as expected and emits the correct events", async () => {
-      let { wallet } = await setUpFixture(deployWallet);
-      await proveTx(
-        wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data)
-      );
-      expect(await wallet.getApprovalStatus(tx.id, owner1.address)).to.eq(true);
-
-      const txResponse: TransactionResponse = await wallet
-        .connect(owner2)
-        .approveAndExecute(tx.id);
-      await expect(txResponse)
-        .to.emit(wallet, EVENT_NAME_APPROVE)
-        .withArgs(owner2.address, tx.id);
-      await expect(txResponse)
-        .to.emit(wallet, EVENT_NAME_EXECUTE)
-        .withArgs(owner2.address, tx.id);
-      tx.executed = true;
-
-      expect(await wallet.getApprovalStatus(tx.id, owner2.address)).to.eq(true);
-      const actualTx = await wallet.getTransaction(tx.id);
-      await checkTxEquality(actualTx, tx);
-    });
-
-    it("Is reverted if it is called not by an owner", async () => {
-      const { wallet } = await setUpFixture(deployWallet);
-      await expect(wallet.approveAndExecute(tx.id)).to.revertedWithCustomError(
-        wallet,
-        REVERT_ERROR_IF_UNAUTHORIZED_CALLER
-      );
-    });
-
-    it("Is reverted if the transaction does not exist", async () => {
-      const { wallet } = await setUpFixture(deployWallet);
-      await expect(
-        wallet.connect(owner1).approveAndExecute(tx.id)
-      ).to.revertedWithCustomError(
-        wallet,
-        REVERT_ERROR_IF_TRANSACTION_DOES_NOT_EXIST
-      );
-    });
-
-    it("Is reverted if the transaction is already approved by the same owner", async () => {
-      const { wallet } = await setUpFixture(deployWallet);
-      await proveTx(
-        wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data)
-      );
-
-      await expect(
-        wallet.connect(owner1).approveAndExecute(tx.id)
-      ).to.revertedWithCustomError(
-        wallet,
-        REVERT_ERROR_IF_TRANSACTION_IS_ALREADY_APPROVED
-      );
-    });
-
-    it("Is reverted if the transaction is already executed", async () => {
-      const { wallet } = await setUpFixture(deployWallet);
-      await proveTx(
-        wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data)
-      );
-      await proveTx(wallet.connect(owner2).approveAndExecute(tx.id));
-
-      await expect(
-        wallet.connect(owner3).approveAndExecute(tx.id)
-      ).to.revertedWithCustomError(
-        wallet,
-        REVERT_ERROR_IF_TRANSACTION_IS_ALREADY_EXECUTED
-      );
-    });
-
-    it("Is reverted if the transaction has not enough approvals", async () => {
-      const { wallet } = await setUpFixture(deployWallet);
-      await proveTx(wallet.connect(owner1).submit(tx.to, tx.value, tx.data));
-
-      await expect(
-        wallet.connect(owner1).approveAndExecute(tx.id)
-      ).to.revertedWithCustomError(
-        wallet,
-        REVERT_ERROR_IF_TRANSACTION_HAS_NOT_ENOUGH_APPROVALS
-      );
-    });
-
-    it("Is reverted if the internal transaction execution fails", async () => {
-      const { wallet } = await setUpFixture(deployWallet);
-      tx.value = TX_VALUE_STUB;
-      await proveTx(
-        wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data)
-      );
-
-      await expect(
-        wallet.connect(owner2).approveAndExecute(tx.id)
-      ).to.revertedWithCustomError(
-        wallet,
-        REVERT_ERROR_IF_INTERNAL_TRANSACTION_IS_FAILED
-      ).withArgs(DEFAULT_ERROR_DATA);
-    });
-  });
-
-  describe("Function 'execute()'", () => {
-    const tx: TestTx = {
-      id: 0,
-      to: ADDRESS_STUB,
-      value: 0,
-      data: TX_DATA_STUB,
-    };
-
-    it("Executes as expected and emits the correct event", async () => {
-      let { wallet } = await setUpFixture(deployWallet);
-      await proveTx(
-        wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data)
-      );
-      await proveTx(wallet.connect(owner2).approve(tx.id));
-
-      await expect(wallet.connect(owner1).execute(tx.id))
-        .to.emit(wallet, EVENT_NAME_EXECUTE)
-        .withArgs(owner1.address, tx.id);
-      tx.executed = true;
-
-      const actualTx = await wallet.getTransaction(tx.id);
-      await checkTxEquality(actualTx, tx);
-    });
-
-    it("Is reverted if it is called not by an owner", async () => {
-      const { wallet } = await setUpFixture(deployWallet);
-      await expect(wallet.execute(tx.id)).to.revertedWithCustomError(
-        wallet,
-        REVERT_ERROR_IF_UNAUTHORIZED_CALLER
-      );
-    });
-
-    it("Is reverted if the transaction does not exist", async () => {
-      const { wallet } = await setUpFixture(deployWallet);
-      await expect(
-        wallet.connect(owner1).execute(tx.id)
-      ).to.revertedWithCustomError(
-        wallet,
-        REVERT_ERROR_IF_TRANSACTION_DOES_NOT_EXIST
-      );
-    });
-
-    it("Is reverted if the transaction is already executed", async () => {
-      const { wallet } = await setUpFixture(deployWallet);
-      await proveTx(
-        wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data)
-      );
-      await proveTx(wallet.connect(owner2).approveAndExecute(tx.id));
-
-      await expect(
-        wallet.connect(owner3).execute(tx.id)
-      ).to.revertedWithCustomError(
-        wallet,
-        REVERT_ERROR_IF_TRANSACTION_IS_ALREADY_EXECUTED
-      );
-    });
-
-    it("Is reverted if the transaction has not enough approvals", async () => {
-      const { wallet } = await setUpFixture(deployWallet);
-      await proveTx(
-        wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data)
-      );
-
-      await expect(
-        wallet.connect(owner1).execute(tx.id)
-      ).to.revertedWithCustomError(
-        wallet,
-        REVERT_ERROR_IF_TRANSACTION_HAS_NOT_ENOUGH_APPROVALS
-      );
-    });
-
-    it("Is reverted if the internal transaction execution fails", async () => {
-      const { wallet } = await setUpFixture(deployWallet);
-      tx.value = TX_VALUE_STUB;
-      await proveTx(
-        wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data)
-      );
-      await proveTx(wallet.connect(owner2).approve(tx.id));
-
-      await expect(
-        wallet.connect(owner1).execute(tx.id)
-      ).to.revertedWithCustomError(
-        wallet,
-        REVERT_ERROR_IF_INTERNAL_TRANSACTION_IS_FAILED
-      ).withArgs(DEFAULT_ERROR_DATA);
-    });
-  });
-
-  describe("Function 'revoke()'", () => {
-    const tx: TestTx = {
-      id: 0,
-      to: ADDRESS_STUB,
-      value: 0,
-      data: TX_DATA_STUB,
-    };
-
-    it("Executes as expected and emits the correct event", async () => {
-      let { wallet } = await setUpFixture(deployWallet);
-      await proveTx(
-        wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data)
-      );
-      expect(await wallet.getApprovalStatus(tx.id, owner1.address)).to.eq(true);
-
-      await expect(wallet.connect(owner1).revoke(tx.id))
-        .to.emit(wallet, EVENT_NAME_REVOKE)
-        .withArgs(owner1.address, tx.id);
-
-      expect(await wallet.getApprovalStatus(tx.id, owner1.address)).to.eq(false);
-    });
-
-    it("Is reverted if it is called not by an owner", async () => {
-      const { wallet } = await setUpFixture(deployWallet);
-      await expect(wallet.revoke(tx.id)).to.revertedWithCustomError(
-        wallet,
-        REVERT_ERROR_IF_UNAUTHORIZED_CALLER
-      );
-    });
-
-    it("Is reverted if the transaction does not exist", async () => {
-      const { wallet } = await setUpFixture(deployWallet);
-      await expect(
-        wallet.connect(owner1).revoke(tx.id)
-      ).to.revertedWithCustomError(
-        wallet,
-        REVERT_ERROR_IF_TRANSACTION_DOES_NOT_EXIST
-      );
-    });
-
-    it("Is reverted if the transaction is already executed", async () => {
-      const { wallet } = await setUpFixture(deployWallet);
-      await proveTx(
-        wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data)
-      );
-      await proveTx(wallet.connect(owner2).approveAndExecute(tx.id));
-
-      await expect(
-        wallet.connect(owner1).revoke(tx.id)
-      ).to.revertedWithCustomError(
-        wallet,
-        REVERT_ERROR_IF_TRANSACTION_IS_ALREADY_EXECUTED
-      );
-    });
-
-    it("Is reverted if the transaction is not approved by the owner", async () => {
-      const { wallet } = await setUpFixture(deployWallet);
-      await proveTx(
-        wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data)
-      );
-
-      await expect(
-        wallet.connect(owner2).revoke(tx.id)
-      ).to.revertedWithCustomError(
-        wallet,
-        REVERT_ERROR_IF_TRANSACTION_IS_NOT_APPROVED
-      );
-    });
-  });
-
-  describe("Functions 'getTransaction()' and 'getTransactions()'", () => {
-    const txs: TestTx[] = [0, 1, 2, 3].map((id) => {
-      return {
-        id: id,
-        to: ethers.utils.hexZeroPad(ethers.utils.hexValue(id + 1), 20),
-        value: id,
-        data: ethers.utils.hexlify(
-          ethers.utils.toUtf8Bytes("Some data " + (id + 1))
-        ),
+    describe("Function 'submit()'", () => {
+      const tx: TestTx = {
+        id: 0,
+        to: ADDRESS_STUB,
+        value: TX_VALUE_STUB,
+        data: TX_DATA_STUB,
       };
-    });
 
-    it("Execute as expected in different cases", async () => {
-      const { wallet } = await setUpFixture(deployWallet);
-      for (let tx of txs) {
-        await proveTx(
-          wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data)
-        );
-      }
-      await proveTx(wallet.connect(owner2).approveAndExecute(txs[0].id));
-      txs[0].executed = true;
+      it("Executes as expected and emits the correct event", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
 
-      expect(await wallet.transactionCount()).to.eq(txs.length);
+        await expect(wallet.connect(owner1).submit(tx.to, tx.value, tx.data))
+          .to.emit(wallet, EVENT_NAME_SUBMIT)
+          .withArgs(owner1.address, tx.id);
 
-      for (let tx of txs) {
         const actualTx = await wallet.getTransaction(tx.id);
         checkTxEquality(actualTx, tx);
-      }
+        expect(await wallet.transactionCount()).to.eq(1);
+      });
 
-      if (network.name === "hardhat") {
+      it("Is reverted if it is called not by an owner", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
         await expect(
-          wallet.getTransaction(txs.length)
+          wallet.submit(tx.to, tx.value, tx.data)
+        ).to.revertedWithCustomError(
+          wallet,
+          REVERT_ERROR_IF_UNAUTHORIZED_CALLER
+        );
+      });
+    });
+
+    describe("Function 'submitAndApprove()'", () => {
+      const tx: TestTx = {
+        id: 0,
+        to: ADDRESS_STUB,
+        value: TX_VALUE_STUB,
+        data: TX_DATA_STUB,
+      };
+
+      it("Executes as expected and emits the correct events", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        const txResponse: TransactionResponse = wallet
+          .connect(owner1)
+          .submitAndApprove(tx.to, tx.value, tx.data);
+
+        await expect(txResponse)
+          .to.emit(wallet, EVENT_NAME_SUBMIT)
+          .withArgs(owner1.address, tx.id);
+        await expect(txResponse)
+          .to.emit(wallet, EVENT_NAME_APPROVE)
+          .withArgs(owner1.address, tx.id);
+
+        const actualTx = await wallet.getTransaction(tx.id);
+        checkTxEquality(actualTx, tx);
+        expect(await wallet.transactionCount()).to.eq(1);
+        expect(await wallet.getApprovalStatus(tx.id, owner1.address)).to.eq(
+          true
+        );
+      });
+
+      it("Is reverted if it is called not by an owner", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        await expect(
+          wallet.submitAndApprove(tx.to, tx.value, tx.data)
+        ).to.revertedWithCustomError(
+          wallet,
+          REVERT_ERROR_IF_UNAUTHORIZED_CALLER
+        );
+      });
+    });
+
+    describe("Function 'approve()'", () => {
+      const tx: TestTx = {
+        id: 0,
+        to: ADDRESS_STUB,
+        value: 0,
+        data: TX_DATA_STUB,
+      };
+
+      it("Executes as expected and emits the correct event", async () => {
+        let { wallet } = await setUpFixture(deployWallet);
+        await proveTx(wallet.connect(owner1).submit(tx.to, tx.value, tx.data));
+        expect(await wallet.getApprovalCount(tx.id)).to.eq(0);
+
+        await expect(wallet.connect(owner1).approve(tx.id))
+          .to.emit(wallet, EVENT_NAME_APPROVE)
+          .withArgs(owner1.address, tx.id);
+
+        expect(await wallet.getApprovalStatus(tx.id, owner1.address)).to.eq(
+          true
+        );
+
+        await expect(wallet.connect(owner2).approve(tx.id))
+          .to.emit(wallet, EVENT_NAME_APPROVE)
+          .withArgs(owner2.address, tx.id);
+
+        expect(await wallet.getApprovalStatus(tx.id, owner2.address)).to.eq(
+          true
+        );
+        expect(await wallet.getApprovalCount(tx.id)).to.eq(2);
+      });
+
+      it("Is reverted if it is called not by an owner", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        await expect(wallet.approve(tx.id)).to.revertedWithCustomError(
+          wallet,
+          REVERT_ERROR_IF_UNAUTHORIZED_CALLER
+        );
+      });
+
+      it("Is reverted if the transaction does not exist", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        await expect(
+          wallet.connect(owner1).approve(tx.id)
         ).to.revertedWithCustomError(
           wallet,
           REVERT_ERROR_IF_TRANSACTION_DOES_NOT_EXIST
         );
-      } else {
-        await expect(wallet.getTransaction(txs.length)).to.reverted;
-      }
+      });
 
-      let actualTxs: any[];
+      it("Is reverted if the transaction is already executed", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        await proveTx(
+          wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data)
+        );
+        await proveTx(wallet.connect(owner2).approveAndExecute(tx.id));
 
-      actualTxs = await wallet.getTransactions(0, 50);
-      checkTxArrayEquality(actualTxs, txs);
+        await expect(
+          wallet.connect(owner3).approve(tx.id)
+        ).to.revertedWithCustomError(
+          wallet,
+          REVERT_ERROR_IF_TRANSACTION_IS_ALREADY_EXECUTED
+        );
+      });
 
-      actualTxs = await wallet.getTransactions(0, 2);
-      checkTxArrayEquality(actualTxs, [txs[0], txs[1]]);
+      it("Is reverted if the transaction is already approved by the same owner", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        await proveTx(
+          wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data)
+        );
 
-      actualTxs = await wallet.getTransactions(1, 2);
-      checkTxArrayEquality(actualTxs, [txs[1], txs[2]]);
-
-      actualTxs = await wallet.getTransactions(1, 1);
-      checkTxArrayEquality(actualTxs, [txs[1]]);
-
-      actualTxs = await wallet.getTransactions(2, 2);
-      checkTxArrayEquality(actualTxs, [txs[2], txs[3]]);
-
-      actualTxs = await wallet.getTransactions(2, 50);
-      checkTxArrayEquality(actualTxs, [txs[2], txs[3]]);
-
-      actualTxs = await wallet.getTransactions(4, 50);
-      checkTxArrayEquality(actualTxs, []);
-
-      actualTxs = await wallet.getTransactions(1, 0);
-      checkTxArrayEquality(actualTxs, []);
-    });
-  });
-
-  describe("Scenarios with cooldown and expiration", () => {
-    const tx: TestTx = {
-      id: 0,
-      to: ADDRESS_STUB,
-      value: 0,
-      data: TX_DATA_STUB,
-    };
-
-    async function wait(timeoutInSeconds: number) {
-      if (network.name === "hardhat") {
-        // A virtual wait through network time shifting
-        await time.increase(timeoutInSeconds);
-      } else {
-        // A real wait through a promise
-        const timeoutInMills = timeoutInSeconds * 1000;
-        await new Promise((resolve) => setTimeout(resolve, timeoutInMills));
-      }
-    }
-
-    async function executeWalletTx(params: { wallet: Contract, txData: string, txId?: number }): Promise<number> {
-      const { wallet, txData } = params;
-      const txId = params.txId || 0;
-      await proveTx(
-        wallet.connect(owner1).submitAndApprove(wallet.address, txId, txData)
-      );
-      await proveTx(wallet.connect(owner2).approveAndExecute(txId));
-      return txId + 1;
-    }
-
-    it("Submission of a transaction sets the cooldown and expiration fields properly", async () => {
-      const { wallet } = await setUpFixture(deployWallet);
-      const txData = encodeConfigureCooldownTimeFunctionData(ONE_MINUTE);
-      const txId = await executeWalletTx({ wallet, txData });
-
-      const txReceipt = await proveTx(
-        wallet.connect(owner1).submit(tx.to, tx.value, tx.data)
-      );
-
-      const txStruct = await wallet.getTransaction(txId);
-      const block = await wallet.provider.getBlock(txReceipt.blockNumber);
-      const blockTimestamp: number = block.timestamp;
-      expect(txStruct.cooldown).to.eq(blockTimestamp + ONE_MINUTE);
-      expect(txStruct.expiration).to.eq(blockTimestamp + ONE_MINUTE + ONE_YEAR);
+        await expect(
+          wallet.connect(owner1).approve(tx.id)
+        ).to.revertedWithCustomError(
+          wallet,
+          REVERT_ERROR_IF_TRANSACTION_IS_ALREADY_APPROVED
+        );
+      });
     });
 
-    it("Execution of a transaction is reverted if the transaction is still on the cooldown", async () => {
-      const { wallet } = await setUpFixture(deployWallet);
-      const txData = encodeConfigureCooldownTimeFunctionData(ONE_MINUTE);
-      const txId = await executeWalletTx({ wallet, txData });
-
-      await proveTx(
-        wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data)
-      );
-
-      await expect(
-        wallet.connect(owner2).approveAndExecute(txId)
-      ).to.be.revertedWithCustomError(
-        wallet,
-        REVERT_ERROR_IF_TRANSACTION_ON_COOLDOWN
-      );
-    });
-
-    it("Approval of a transaction is reverted if the transaction is already expired", async () => {
-      const { wallet } = await setUpFixture(deployWallet);
-      const txData = encodeConfigureExpirationTimeTimeFunctionData(ONE_SECOND);
-      const txId = await executeWalletTx({ wallet, txData });
-
-      await proveTx(
-        wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data)
-      );
-      await wait(2 * ONE_SECOND);
-      await expect(
-        wallet.connect(owner2).approve(txId)
-      ).to.be.revertedWithCustomError(
-        wallet,
-        REVERT_ERROR_IF_TRANSACTION_EXPIRED
-      );
-    });
-
-    async function prepareExecutionWithSingleApproval(): Promise<{ wallet: Contract, txId: number }> {
-      const { wallet } = await setUpFixture(deployWallet);
-
-      // Set only one required approval
-      const requiredApprovals = 1;
-      let txData = encodeConfigureOwnersFunctionData(
-        ownerAddresses,
-        requiredApprovals
-      );
-      let txId = await executeWalletTx({ wallet, txData });
-
-      // Set the new expiration time
-      txData = encodeConfigureExpirationTimeTimeFunctionData(ONE_SECOND);
-      await proveTx(
-        wallet.connect(owner1).submitAndApprove(wallet.address, 0, txData)
-      );
-      await proveTx(wallet.connect(owner1).execute(txId));
-
-      ++txId;
-      return { wallet, txId };
-    }
-
-    it("Execution of a transaction is reverted if the transaction is already expired", async () => {
-      const { wallet, txId } = await prepareExecutionWithSingleApproval();
-      await proveTx(
-        wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data)
-      );
-      await wait(2 * ONE_SECOND);
-      await expect(
-        wallet.connect(owner1).execute(txId)
-      ).to.be.revertedWithCustomError(
-        wallet,
-        REVERT_ERROR_IF_TRANSACTION_EXPIRED
-      );
-    });
-
-    it("Revocation of a transaction is reverted if the transaction is already expired", async () => {
-      const { wallet, txId } = await prepareExecutionWithSingleApproval();
-
-      await proveTx(
-        wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data)
-      );
-      await wait(2 * ONE_SECOND);
-      await expect(
-        wallet.connect(owner1).revoke(txId)
-      ).to.be.revertedWithCustomError(
-        wallet,
-        REVERT_ERROR_IF_TRANSACTION_EXPIRED
-      );
-    });
-  });
-
-  describe("Scenarios with sending transactions to another contract", () => {
-    async function beforeExecution(params: {
-      functionName: string;
-      txValue: number;
-    }): Promise<{
-      wallet: Contract;
-      testContractMock: Contract;
-      tx: TestTx;
-      amount: number;
-    }> {
-      const { wallet, testContractMock } = await setUpFixture(
-        deployAllContracts
-      );
-      const tokenInterface = new ethers.utils.Interface([
-        `function ${params.functionName}(uint256 amount)`,
-      ]);
-      const amount = 234;
+    describe("Function 'approveAndExecute()'", () => {
       const tx: TestTx = {
         id: 0,
-        to: testContractMock.address,
-        value: params.txValue,
-        data: tokenInterface.encodeFunctionData(params.functionName, [amount]),
+        to: ADDRESS_STUB,
+        value: 0,
+        data: TX_DATA_STUB,
       };
-      await proveTx(
-        wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data)
-      );
 
-      return {
-        wallet,
-        testContractMock,
-        tx,
-        amount,
-      };
-    }
-
-    describe("Function 'approveAndExecute()' sends a transaction as expected if", () => {
-      it("The function of another contract exists and other conditions are met", async () => {
-        const { wallet, testContractMock, tx, amount } = await beforeExecution({
-          functionName: "testFunction",
-          txValue: TX_VALUE_STUB,
-        });
+      it("Executes as expected and emits the correct events", async () => {
+        let { wallet } = await setUpFixture(deployWallet);
         await proveTx(
-          owner2.sendTransaction({
-            to: wallet.address,
-            value: tx.value,
-          })
+          wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data)
+        );
+        expect(await wallet.getApprovalStatus(tx.id, owner1.address)).to.eq(
+          true
         );
 
         const txResponse: TransactionResponse = await wallet
           .connect(owner2)
           .approveAndExecute(tx.id);
         await expect(txResponse)
-          .to.emit(wallet, EVENT_NAME_EXECUTE)
+          .to.emit(wallet, EVENT_NAME_APPROVE)
           .withArgs(owner2.address, tx.id);
         await expect(txResponse)
-          .to.emit(testContractMock, EVENT_NAME_TEST)
-          .withArgs(wallet.address, tx.value, amount);
-        await expect(txResponse).to.changeEtherBalances(
-          [wallet, testContractMock],
-          [-tx.value, tx.value]
+          .to.emit(wallet, EVENT_NAME_EXECUTE)
+          .withArgs(owner2.address, tx.id);
+        tx.executed = true;
+
+        expect(await wallet.getApprovalStatus(tx.id, owner2.address)).to.eq(
+          true
+        );
+        const actualTx = await wallet.getTransaction(tx.id);
+        await checkTxEquality(actualTx, tx);
+      });
+
+      it("Is reverted if it is called not by an owner", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        await expect(
+          wallet.approveAndExecute(tx.id)
+        ).to.revertedWithCustomError(
+          wallet,
+          REVERT_ERROR_IF_UNAUTHORIZED_CALLER
+        );
+      });
+
+      it("Is reverted if the transaction does not exist", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        await expect(
+          wallet.connect(owner1).approveAndExecute(tx.id)
+        ).to.revertedWithCustomError(
+          wallet,
+          REVERT_ERROR_IF_TRANSACTION_DOES_NOT_EXIST
+        );
+      });
+
+      it("Is reverted if the transaction is already approved by the same owner", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        await proveTx(
+          wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data)
+        );
+
+        await expect(
+          wallet.connect(owner1).approveAndExecute(tx.id)
+        ).to.revertedWithCustomError(
+          wallet,
+          REVERT_ERROR_IF_TRANSACTION_IS_ALREADY_APPROVED
+        );
+      });
+
+      it("Is reverted if the transaction is already executed", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        await proveTx(
+          wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data)
+        );
+        await proveTx(wallet.connect(owner2).approveAndExecute(tx.id));
+
+        await expect(
+          wallet.connect(owner3).approveAndExecute(tx.id)
+        ).to.revertedWithCustomError(
+          wallet,
+          REVERT_ERROR_IF_TRANSACTION_IS_ALREADY_EXECUTED
+        );
+      });
+
+      it("Is reverted if the transaction has not enough approvals", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        await proveTx(wallet.connect(owner1).submit(tx.to, tx.value, tx.data));
+
+        await expect(
+          wallet.connect(owner1).approveAndExecute(tx.id)
+        ).to.revertedWithCustomError(
+          wallet,
+          REVERT_ERROR_IF_TRANSACTION_HAS_NOT_ENOUGH_APPROVALS
+        );
+      });
+
+      it("Is reverted if the internal transaction execution fails", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        tx.value = TX_VALUE_STUB;
+        await proveTx(
+          wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data)
+        );
+
+        await expect(wallet.connect(owner2).approveAndExecute(tx.id))
+          .to.revertedWithCustomError(
+            wallet,
+            REVERT_ERROR_IF_INTERNAL_TRANSACTION_IS_FAILED
+          )
+          .withArgs(DEFAULT_ERROR_DATA);
+      });
+    });
+
+    describe("Function 'execute()'", () => {
+      const tx: TestTx = {
+        id: 0,
+        to: ADDRESS_STUB,
+        value: 0,
+        data: TX_DATA_STUB,
+      };
+
+      it("Executes as expected and emits the correct event", async () => {
+        let { wallet } = await setUpFixture(deployWallet);
+        await proveTx(
+          wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data)
+        );
+        await proveTx(wallet.connect(owner2).approve(tx.id));
+
+        await expect(wallet.connect(owner1).execute(tx.id))
+          .to.emit(wallet, EVENT_NAME_EXECUTE)
+          .withArgs(owner1.address, tx.id);
+        tx.executed = true;
+
+        const actualTx = await wallet.getTransaction(tx.id);
+        await checkTxEquality(actualTx, tx);
+      });
+
+      it("Is reverted if it is called not by an owner", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        await expect(wallet.execute(tx.id)).to.revertedWithCustomError(
+          wallet,
+          REVERT_ERROR_IF_UNAUTHORIZED_CALLER
+        );
+      });
+
+      it("Is reverted if the transaction does not exist", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        await expect(
+          wallet.connect(owner1).execute(tx.id)
+        ).to.revertedWithCustomError(
+          wallet,
+          REVERT_ERROR_IF_TRANSACTION_DOES_NOT_EXIST
+        );
+      });
+
+      it("Is reverted if the transaction is already executed", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        await proveTx(
+          wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data)
+        );
+        await proveTx(wallet.connect(owner2).approveAndExecute(tx.id));
+
+        await expect(
+          wallet.connect(owner3).execute(tx.id)
+        ).to.revertedWithCustomError(
+          wallet,
+          REVERT_ERROR_IF_TRANSACTION_IS_ALREADY_EXECUTED
+        );
+      });
+
+      it("Is reverted if the transaction has not enough approvals", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        await proveTx(
+          wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data)
+        );
+
+        await expect(
+          wallet.connect(owner1).execute(tx.id)
+        ).to.revertedWithCustomError(
+          wallet,
+          REVERT_ERROR_IF_TRANSACTION_HAS_NOT_ENOUGH_APPROVALS
+        );
+      });
+
+      it("Is reverted if the internal transaction execution fails", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        tx.value = TX_VALUE_STUB;
+        await proveTx(
+          wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data)
+        );
+        await proveTx(wallet.connect(owner2).approve(tx.id));
+
+        await expect(wallet.connect(owner1).execute(tx.id))
+          .to.revertedWithCustomError(
+            wallet,
+            REVERT_ERROR_IF_INTERNAL_TRANSACTION_IS_FAILED
+          )
+          .withArgs(DEFAULT_ERROR_DATA);
+      });
+    });
+
+    describe("Function 'revoke()'", () => {
+      const tx: TestTx = {
+        id: 0,
+        to: ADDRESS_STUB,
+        value: 0,
+        data: TX_DATA_STUB,
+      };
+
+      it("Executes as expected and emits the correct event", async () => {
+        let { wallet } = await setUpFixture(deployWallet);
+        await proveTx(
+          wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data)
+        );
+        expect(await wallet.getApprovalStatus(tx.id, owner1.address)).to.eq(
+          true
+        );
+
+        await expect(wallet.connect(owner1).revoke(tx.id))
+          .to.emit(wallet, EVENT_NAME_REVOKE)
+          .withArgs(owner1.address, tx.id);
+
+        expect(await wallet.getApprovalStatus(tx.id, owner1.address)).to.eq(
+          false
+        );
+      });
+
+      it("Is reverted if it is called not by an owner", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        await expect(wallet.revoke(tx.id)).to.revertedWithCustomError(
+          wallet,
+          REVERT_ERROR_IF_UNAUTHORIZED_CALLER
+        );
+      });
+
+      it("Is reverted if the transaction does not exist", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        await expect(
+          wallet.connect(owner1).revoke(tx.id)
+        ).to.revertedWithCustomError(
+          wallet,
+          REVERT_ERROR_IF_TRANSACTION_DOES_NOT_EXIST
+        );
+      });
+
+      it("Is reverted if the transaction is already executed", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        await proveTx(
+          wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data)
+        );
+        await proveTx(wallet.connect(owner2).approveAndExecute(tx.id));
+
+        await expect(
+          wallet.connect(owner1).revoke(tx.id)
+        ).to.revertedWithCustomError(
+          wallet,
+          REVERT_ERROR_IF_TRANSACTION_IS_ALREADY_EXECUTED
+        );
+      });
+
+      it("Is reverted if the transaction is not approved by the owner", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        await proveTx(
+          wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data)
+        );
+
+        await expect(
+          wallet.connect(owner2).revoke(tx.id)
+        ).to.revertedWithCustomError(
+          wallet,
+          REVERT_ERROR_IF_TRANSACTION_IS_NOT_APPROVED
         );
       });
     });
 
-    describe("Function 'approveAndExecute()' is reverted if", () => {
-      it("The function of another contract does not exist", async () => {
-        const { wallet, tx } = await beforeExecution({
-          functionName: "burn",
-          txValue: 0,
-        });
-
-        await expect(
-          wallet.connect(owner2).approveAndExecute(tx.id)
-        ).to.revertedWithCustomError(
-          wallet,
-          REVERT_ERROR_IF_INTERNAL_TRANSACTION_IS_FAILED
-        ).withArgs(DEFAULT_ERROR_DATA);
+    describe("Functions 'getTransaction()' and 'getTransactions()'", () => {
+      const txs: TestTx[] = [0, 1, 2, 3].map((id) => {
+        return {
+          id: id,
+          to: ethers.utils.hexZeroPad(ethers.utils.hexValue(id + 1), 20),
+          value: id,
+          data: ethers.utils.hexlify(
+            ethers.utils.toUtf8Bytes("Some data " + (id + 1))
+          ),
+        };
       });
 
-      it("The function of another contract is reverted during execution", async () => {
-        const { wallet, testContractMock, tx } = await beforeExecution({
-          functionName: "testFunction",
-          txValue: 0,
-        });
-        await proveTx(testContractMock.disable());
+      it("Execute as expected in different cases", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        for (let tx of txs) {
+          await proveTx(
+            wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data)
+          );
+        }
+        await proveTx(wallet.connect(owner2).approveAndExecute(txs[0].id));
+        txs[0].executed = true;
 
-        await expect(
-          wallet.connect(owner2).approveAndExecute(tx.id)
-        ).to.revertedWithCustomError(
-          wallet,
-          REVERT_ERROR_IF_INTERNAL_TRANSACTION_IS_FAILED
-        ).withArgs(
-          testContractMock.interface.encodeErrorResult("TestError", ["Contract is disabled"])
-        );
+        expect(await wallet.transactionCount()).to.eq(txs.length);
+
+        for (let tx of txs) {
+          const actualTx = await wallet.getTransaction(tx.id);
+          checkTxEquality(actualTx, tx);
+        }
+
+        if (network.name === "hardhat") {
+          await expect(
+            wallet.getTransaction(txs.length)
+          ).to.revertedWithCustomError(
+            wallet,
+            REVERT_ERROR_IF_TRANSACTION_DOES_NOT_EXIST
+          );
+        } else {
+          await expect(wallet.getTransaction(txs.length)).to.reverted;
+        }
+
+        let actualTxs: any[];
+
+        actualTxs = await wallet.getTransactions(0, 50);
+        checkTxArrayEquality(actualTxs, txs);
+
+        actualTxs = await wallet.getTransactions(0, 2);
+        checkTxArrayEquality(actualTxs, [txs[0], txs[1]]);
+
+        actualTxs = await wallet.getTransactions(1, 2);
+        checkTxArrayEquality(actualTxs, [txs[1], txs[2]]);
+
+        actualTxs = await wallet.getTransactions(1, 1);
+        checkTxArrayEquality(actualTxs, [txs[1]]);
+
+        actualTxs = await wallet.getTransactions(2, 2);
+        checkTxArrayEquality(actualTxs, [txs[2], txs[3]]);
+
+        actualTxs = await wallet.getTransactions(2, 50);
+        checkTxArrayEquality(actualTxs, [txs[2], txs[3]]);
+
+        actualTxs = await wallet.getTransactions(4, 50);
+        checkTxArrayEquality(actualTxs, []);
+
+        actualTxs = await wallet.getTransactions(1, 0);
+        checkTxArrayEquality(actualTxs, []);
       });
+    });
 
-      it("The wallet has not enough balance of the native tokens", async () => {
-        const { wallet, tx } = await beforeExecution({
-          functionName: "testFunction",
-          txValue: TX_VALUE_STUB,
-        });
+    describe("Scenarios with cooldown and expiration", () => {
+      const tx: TestTx = {
+        id: 0,
+        to: ADDRESS_STUB,
+        value: 0,
+        data: TX_DATA_STUB,
+      };
+
+      async function wait(timeoutInSeconds: number) {
+        if (network.name === "hardhat") {
+          // A virtual wait through network time shifting
+          await time.increase(timeoutInSeconds);
+        } else {
+          // A real wait through a promise
+          const timeoutInMills = timeoutInSeconds * 1000;
+          await new Promise((resolve) => setTimeout(resolve, timeoutInMills));
+        }
+      }
+
+      async function executeWalletTx(params: {
+        wallet: Contract;
+        txData: string;
+        txId?: number;
+      }): Promise<number> {
+        const { wallet, txData } = params;
+        const txId = params.txId || 0;
         await proveTx(
-          owner2.sendTransaction({
-            to: wallet.address,
-            value: tx.value - 1,
-          })
+          wallet.connect(owner1).submitAndApprove(wallet.address, txId, txData)
+        );
+        await proveTx(wallet.connect(owner2).approveAndExecute(txId));
+        return txId + 1;
+      }
+
+      it("Submission of a transaction sets the cooldown and expiration fields properly", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        const txData = encodeConfigureCooldownTimeFunctionData(ONE_MINUTE);
+        const txId = await executeWalletTx({ wallet, txData });
+
+        const txReceipt = await proveTx(
+          wallet.connect(owner1).submit(tx.to, tx.value, tx.data)
+        );
+
+        const txStruct = await wallet.getTransaction(txId);
+        const block = await wallet.provider.getBlock(txReceipt.blockNumber);
+        const blockTimestamp: number = block.timestamp;
+        expect(txStruct.cooldown).to.eq(blockTimestamp + ONE_MINUTE);
+        expect(txStruct.expiration).to.eq(
+          blockTimestamp + ONE_MINUTE + ONE_YEAR
+        );
+      });
+
+      it("Execution of a transaction is reverted if the transaction is still on the cooldown", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        const txData = encodeConfigureCooldownTimeFunctionData(ONE_MINUTE);
+        const txId = await executeWalletTx({ wallet, txData });
+
+        await proveTx(
+          wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data)
         );
 
         await expect(
-          wallet.connect(owner2).approveAndExecute(tx.id)
-        ).to.revertedWithCustomError(
+          wallet.connect(owner2).approveAndExecute(txId)
+        ).to.be.revertedWithCustomError(
           wallet,
-          REVERT_ERROR_IF_INTERNAL_TRANSACTION_IS_FAILED
-        ).withArgs(DEFAULT_ERROR_DATA);
+          REVERT_ERROR_IF_TRANSACTION_ON_COOLDOWN
+        );
+      });
+
+      it("Approval of a transaction is reverted if the transaction is already expired", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        const txData =
+          encodeConfigureExpirationTimeTimeFunctionData(ONE_SECOND);
+        const txId = await executeWalletTx({ wallet, txData });
+
+        await proveTx(
+          wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data)
+        );
+        await wait(2 * ONE_SECOND);
+        await expect(
+          wallet.connect(owner2).approve(txId)
+        ).to.be.revertedWithCustomError(
+          wallet,
+          REVERT_ERROR_IF_TRANSACTION_EXPIRED
+        );
+      });
+
+      async function prepareExecutionWithSingleApproval(): Promise<{
+        wallet: Contract;
+        txId: number;
+      }> {
+        const { wallet } = await setUpFixture(deployWallet);
+
+        // Set only one required approval
+        const requiredApprovals = 1;
+        let txData = encodeConfigureOwnersFunctionData(
+          ownerAddresses,
+          requiredApprovals
+        );
+        let txId = await executeWalletTx({ wallet, txData });
+
+        // Set the new expiration time
+        txData = encodeConfigureExpirationTimeTimeFunctionData(ONE_SECOND);
+        await proveTx(
+          wallet.connect(owner1).submitAndApprove(wallet.address, 0, txData)
+        );
+        await proveTx(wallet.connect(owner1).execute(txId));
+
+        ++txId;
+        return { wallet, txId };
+      }
+
+      it("Execution of a transaction is reverted if the transaction is already expired", async () => {
+        const { wallet, txId } = await prepareExecutionWithSingleApproval();
+        await proveTx(
+          wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data)
+        );
+        await wait(2 * ONE_SECOND);
+        await expect(
+          wallet.connect(owner1).execute(txId)
+        ).to.be.revertedWithCustomError(
+          wallet,
+          REVERT_ERROR_IF_TRANSACTION_EXPIRED
+        );
+      });
+
+      it("Revocation of a transaction is reverted if the transaction is already expired", async () => {
+        const { wallet, txId } = await prepareExecutionWithSingleApproval();
+
+        await proveTx(
+          wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data)
+        );
+        await wait(2 * ONE_SECOND);
+        await expect(
+          wallet.connect(owner1).revoke(txId)
+        ).to.be.revertedWithCustomError(
+          wallet,
+          REVERT_ERROR_IF_TRANSACTION_EXPIRED
+        );
+      });
+    });
+
+    describe("Scenarios with sending transactions to another contract", () => {
+      async function beforeExecution(params: {
+        functionName: string;
+        txValue: number;
+      }): Promise<{
+        wallet: Contract;
+        testContractMock: Contract;
+        tx: TestTx;
+        amount: number;
+      }> {
+        const { wallet, testContractMock } = await setUpFixture(
+          deployAllContracts
+        );
+        const tokenInterface = new ethers.utils.Interface([
+          `function ${params.functionName}(uint256 amount)`,
+        ]);
+        const amount = 234;
+        const tx: TestTx = {
+          id: 0,
+          to: testContractMock.address,
+          value: params.txValue,
+          data: tokenInterface.encodeFunctionData(params.functionName, [
+            amount,
+          ]),
+        };
+        await proveTx(
+          wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data)
+        );
+
+        return {
+          wallet,
+          testContractMock,
+          tx,
+          amount,
+        };
+      }
+
+      describe("Function 'approveAndExecute()' sends a transaction as expected if", () => {
+        it("The function of another contract exists and other conditions are met", async () => {
+          const { wallet, testContractMock, tx, amount } =
+            await beforeExecution({
+              functionName: "testFunction",
+              txValue: TX_VALUE_STUB,
+            });
+          await proveTx(
+            owner2.sendTransaction({
+              to: wallet.address,
+              value: tx.value,
+            })
+          );
+
+          const txResponse: TransactionResponse = await wallet
+            .connect(owner2)
+            .approveAndExecute(tx.id);
+          await expect(txResponse)
+            .to.emit(wallet, EVENT_NAME_EXECUTE)
+            .withArgs(owner2.address, tx.id);
+          await expect(txResponse)
+            .to.emit(testContractMock, EVENT_NAME_TEST)
+            .withArgs(wallet.address, tx.value, amount);
+          await expect(txResponse).to.changeEtherBalances(
+            [wallet, testContractMock],
+            [-tx.value, tx.value]
+          );
+        });
+      });
+
+      describe("Function 'approveAndExecute()' is reverted if", () => {
+        it("The function of another contract does not exist", async () => {
+          const { wallet, tx } = await beforeExecution({
+            functionName: "burn",
+            txValue: 0,
+          });
+
+          await expect(wallet.connect(owner2).approveAndExecute(tx.id))
+            .to.revertedWithCustomError(
+              wallet,
+              REVERT_ERROR_IF_INTERNAL_TRANSACTION_IS_FAILED
+            )
+            .withArgs(DEFAULT_ERROR_DATA);
+        });
+
+        it("The function of another contract is reverted during execution", async () => {
+          const { wallet, testContractMock, tx } = await beforeExecution({
+            functionName: "testFunction",
+            txValue: 0,
+          });
+          await proveTx(testContractMock.disable());
+
+          await expect(wallet.connect(owner2).approveAndExecute(tx.id))
+            .to.revertedWithCustomError(
+              wallet,
+              REVERT_ERROR_IF_INTERNAL_TRANSACTION_IS_FAILED
+            )
+            .withArgs(
+              testContractMock.interface.encodeErrorResult("TestError", [
+                "Contract is disabled",
+              ])
+            );
+        });
+
+        it("The wallet has not enough balance of the native tokens", async () => {
+          const { wallet, tx } = await beforeExecution({
+            functionName: "testFunction",
+            txValue: TX_VALUE_STUB,
+          });
+          await proveTx(
+            owner2.sendTransaction({
+              to: wallet.address,
+              value: tx.value - 1,
+            })
+          );
+
+          await expect(wallet.connect(owner2).approveAndExecute(tx.id))
+            .to.revertedWithCustomError(
+              wallet,
+              REVERT_ERROR_IF_INTERNAL_TRANSACTION_IS_FAILED
+            )
+            .withArgs(DEFAULT_ERROR_DATA);
+        });
       });
     });
   });
