@@ -63,6 +63,8 @@ describe("Multisig wallet contracts", () => {
 
   const HARDHAT_PROXY_ADMIN_ADDRESS =
     "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
+  const HARDHAT_FIRST_DEPLOYED_WALLET_ADDRESS =
+    "0xF1823bc4243b40423b8C8c3F6174e687a4C690b8";
 
   const EVENT_NAME_APPROVE = "Approve";
   const EVENT_NAME_DEPOSIT = "Deposit";
@@ -73,6 +75,7 @@ describe("Multisig wallet contracts", () => {
   const EVENT_NAME_CONFIGURE_OWNERS = "ConfigureOwners";
   const EVENT_NAME_CONFIGURE_COOLDOWN_TIME = "ConfigureCooldownTime";
   const EVENT_NAME_CONFIGURE_EXPIRATION_TIME = "ConfigureExpirationTime";
+  const EVENT_NAME_NEW_WALLET_DEPLOYED_BY_FACTORY = "NewWallet";
 
   const REVERT_MESSAGE_IF_CONTRACT_IS_ALREADY_INITIALIZED =
     "Initializable: contract is already initialized";
@@ -167,7 +170,10 @@ describe("Multisig wallet contracts", () => {
     );
   }
 
-  async function encodeUpgrade(proxy: string, newImplementation: string) {
+  async function encodeUpgradeFunctionData(
+    proxy: string,
+    newImplementation: string
+  ) {
     return proxyAdminFactory.interface.encodeFunctionData("upgrade", [
       proxy,
       newImplementation,
@@ -219,7 +225,10 @@ describe("Multisig wallet contracts", () => {
   async function deployWalletContractMock(): Promise<{
     walletContractMock: Contract;
   }> {
-    const walletContractMock = await tokenFactory.deploy();
+    const walletContractMock = await mockWalletFactory.deploy(
+      ownerAddresses,
+      REQUIRED_APPROVALS
+    );
     await walletContractMock.deployed();
 
     return {
@@ -244,17 +253,20 @@ describe("Multisig wallet contracts", () => {
     testContractMock: Contract;
     admin: Contract;
     walletContractMock: Contract;
+    factory: Contract;
   }> {
     const { wallet } = await deployWalletUpgradeable();
     const { testContractMock } = await deployTestContractMock();
     const { admin } = await getProxyAdminContract();
     const { walletContractMock } = await deployWalletContractMock();
+    const { factory } = await deployFactory();
 
     return {
       wallet,
       testContractMock,
       admin,
       walletContractMock,
+      factory,
     };
   }
 
@@ -395,7 +407,7 @@ describe("Multisig wallet contracts", () => {
 
         expect(newOwner).to.eq(wallet.address);
 
-        const upgradeData = encodeUpgrade(
+        const upgradeData = encodeUpgradeFunctionData(
           wallet.address,
           walletContractMock.address
         );
@@ -512,14 +524,19 @@ describe("Multisig wallet contracts", () => {
     });
 
     describe("Function 'deployNewWallet()'", () => {
-      it("Creates new wallet instance with selected parameters", async () => {
+      it("Creates new wallet instance with selected parameters and emits the event", async () => {
         const { factory } = await setUpFixture(deployFactory);
 
-        await factory.deployNewWallet(ownerAddresses, REQUIRED_APPROVALS);
-        const walletsArray = await factory.getDeployedWallets();
+        await expect(
+          await factory.deployNewWallet(ownerAddresses, REQUIRED_APPROVALS)
+        )
+          .to.emit(factory, EVENT_NAME_NEW_WALLET_DEPLOYED_BY_FACTORY)
+          .withArgs(deployer.address, HARDHAT_FIRST_DEPLOYED_WALLET_ADDRESS, 0);
+
+        const walletAddress = await factory.getDeployedWallet(0);
         const wallet = await ethers.getContractAt(
           "MultiSigWallet",
-          walletsArray[0]
+          walletAddress
         );
         expect(await wallet.owners()).to.deep.eq(ownerAddresses);
         expect(await wallet.requiredApprovals()).to.eq(REQUIRED_APPROVALS);
@@ -594,6 +611,29 @@ describe("Multisig wallet contracts", () => {
           walletFactory,
           REVERT_ERROR_IF_ZERO_OWNER_ADDRESS
         );
+      });
+    });
+
+    describe("Functions 'getDeployedWallet()' and 'getWalletsCount()'", async () => {
+      it("Returns the amount of deployed wallets", async () => {
+        const { factory } = await setUpFixture(deployFactory);
+
+        expect(await factory.walletsCount()).to.eq(0);
+        await factory.deployNewWallet(ownerAddresses, REQUIRED_APPROVALS);
+        expect(await factory.walletsCount()).to.eq(1);
+      });
+
+      it("Returns wallet address by id", async () => {
+        const { factory } = await setUpFixture(deployFactory);
+
+        await factory.deployNewWallet(ownerAddresses, REQUIRED_APPROVALS);
+        const walletAddress = await factory.getDeployedWallet(0);
+        const wallet = await ethers.getContractAt(
+          "MultiSigWallet",
+          walletAddress
+        );
+
+        expect(await factory.getDeployedWallet(0)).to.eq(wallet.address);
       });
     });
   });
