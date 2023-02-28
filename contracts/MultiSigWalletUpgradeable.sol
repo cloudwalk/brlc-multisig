@@ -7,9 +7,9 @@ import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/I
 import { MultiSigWalletBase } from "./base/MultiSigWalletBase.sol";
 
 /**
- * @title MultiSigWallet contract
+ * @title MultiSigWalletUpgradeable contract
  * @author CloudWalk Inc.
- * @dev The implementation of the multi-signature wallet contract.
+ * @dev The implementation of the upgradeable multi-signature wallet contract.
  */
 contract MultiSigWalletUpgradeable is Initializable, MultiSigWalletBase {
     /**

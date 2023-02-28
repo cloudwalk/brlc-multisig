@@ -6,9 +6,9 @@ import { IMultiSigWallet } from "./IMultiSigWallet.sol";
 import { MultiSigWalletStorage } from "./MultiSigWalletStorage.sol";
 
 /**
- * @title MultiSigWallet contract
+ * @title MultiSigWalletBase contract
  * @author CloudWalk Inc.
- * @dev The implementation of the multi-signature wallet contract.
+ * @dev The base of the multi-signature wallet contract.
  */
 contract MultiSigWalletBase is MultiSigWalletStorage, IMultiSigWallet {
     // --------------------------- Errors ---------------------------
