@@ -4,7 +4,6 @@ pragma solidity 0.8.16;
 
 import { IMultiSigWallet } from "./IMultiSigWallet.sol";
 import { MultiSigWalletStorage } from "./MultiSigWalletStorage.sol";
-import { SafeCast } from "../oz-utils/SafeCast.sol";
 
 /**
  * @title MultiSigWalletBase contract
@@ -12,8 +11,6 @@ import { SafeCast } from "../oz-utils/SafeCast.sol";
  * @dev The base of the multi-signature wallet contract.
  */
 abstract contract MultiSigWalletBase is MultiSigWalletStorage, IMultiSigWallet {
-    using SafeCast for uint256;
-
     // --------------------------- Errors ---------------------------
 
     /// @dev An unauthorized account called a function.
@@ -190,22 +187,22 @@ abstract contract MultiSigWalletBase is MultiSigWalletStorage, IMultiSigWallet {
      * - The array of wallet owners must not be empty.
      * - The number of required approvals must not be zero and must not exceed the length of the wallet owners array.
      */
-    function configureOwners(address[] memory newOwners, uint256 newRequiredApprovals) external onlySelfCall {
-        _configureOwners(newOwners, newRequiredApprovals.toUint16());
+    function configureOwners(address[] memory newOwners, uint16 newRequiredApprovals) external onlySelfCall {
+        _configureOwners(newOwners, newRequiredApprovals);
     }
 
     /**
      * @dev See {IMultiSigWallet-configureExpirationTime}
      */
-    function configureExpirationTime(uint256 newExpirationTime) external onlySelfCall {
-        _configureExpirationTime(newExpirationTime.toUint120());
+    function configureExpirationTime(uint120 newExpirationTime) external onlySelfCall {
+        _configureExpirationTime(newExpirationTime);
     }
 
     /**
      * @dev See {IMultiSigWallet-configureCooldownTime}
      */
-    function configureCooldownTime(uint256 newCooldownTime) external onlySelfCall {
-        _configureCooldownTime(newCooldownTime.toUint120());
+    function configureCooldownTime(uint120 newCooldownTime) external onlySelfCall {
+        _configureCooldownTime(newCooldownTime);
     }
 
     /**
@@ -288,14 +285,14 @@ abstract contract MultiSigWalletBase is MultiSigWalletStorage, IMultiSigWallet {
     /**
      * @dev See {IMultiSigWallet-expirationTime}.
      */
-    function expirationTime() external view returns (uint256) {
+    function expirationTime() external view returns (uint120) {
         return _expirationTime;
     }
 
     /**
      * @dev See {IMultiSigWallet-cooldownTime}.
      */
-    function cooldownTime() external view returns (uint256) {
+    function cooldownTime() external view returns (uint120) {
         return _cooldownTime;
     }
 
@@ -311,8 +308,8 @@ abstract contract MultiSigWalletBase is MultiSigWalletStorage, IMultiSigWallet {
             Transaction({
                 to: to,
                 executed: false,
-                cooldown: (block.timestamp + _cooldownTime).toUint128(),
-                expiration: (block.timestamp + _cooldownTime + _expirationTime).toUint128(),
+                cooldown: toUint128(block.timestamp) + _cooldownTime,
+                expiration: toUint128(block.timestamp) + _cooldownTime + _expirationTime,
                 value: value,
                 data: data
             })
@@ -465,5 +462,14 @@ abstract contract MultiSigWalletBase is MultiSigWalletStorage, IMultiSigWallet {
     function _configureCooldownTime(uint120 newCooldownTime) internal {
         _cooldownTime = newCooldownTime;
         emit ConfigureCooldownTime(newCooldownTime);
+    }
+
+    /**
+     * @dev Returns the downcasted uint128 from uint256, reverting on
+     * overflow (when the input is greater than largest uint128).
+     */
+    function toUint128(uint256 value) internal pure returns (uint128) {
+        require(value <= type(uint128).max, "SafeCast: value doesn't fit in 128 bits");
+        return uint128(value);
     }
 }

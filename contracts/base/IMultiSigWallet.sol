@@ -158,7 +158,7 @@ interface IMultiSigWallet is IMultiSigWalletTypes {
      * @param newOwners The array of addresses to become the wallet owners.
      * @param newRequiredApprovals The new number of approvals required to execute a transaction.
      */
-    function configureOwners(address[] memory newOwners, uint256 newRequiredApprovals) external;
+    function configureOwners(address[] memory newOwners, uint16 newRequiredApprovals) external;
 
     /**
      * @dev Configures the expiration time that will be applied to new transactions.
@@ -167,7 +167,7 @@ interface IMultiSigWallet is IMultiSigWalletTypes {
      *
      * @param newExpirationTime The new value of the expiration time.
      */
-    function configureExpirationTime(uint256 newExpirationTime) external;
+    function configureExpirationTime(uint120 newExpirationTime) external;
 
     /**
      * @dev Configures the cooldown time that will be applied to new transactions.
@@ -176,7 +176,7 @@ interface IMultiSigWallet is IMultiSigWalletTypes {
      *
      * @param newCooldownTime The new value of the cooldown time.
      */
-    function configureCooldownTime(uint256 newCooldownTime) external;
+    function configureCooldownTime(uint120 newCooldownTime) external;
 
     /**
      * @dev Returns the number of approvals for a transaction.
@@ -228,10 +228,10 @@ interface IMultiSigWallet is IMultiSigWalletTypes {
     /**
      * @dev Returns the configured expiration time.
      */
-    function expirationTime() external view returns (uint256);
+    function expirationTime() external view returns (uint120);
 
     /**
      * @dev Returns the configured cooldown time.
      */
-    function cooldownTime() external view returns (uint256);
+    function cooldownTime() external view returns (uint120);
 }

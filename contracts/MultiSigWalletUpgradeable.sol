@@ -3,9 +3,7 @@
 pragma solidity 0.8.16;
 
 import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-
 import { MultiSigWalletBase } from "./base/MultiSigWalletBase.sol";
-import { SafeCast } from "./oz-utils/SafeCast.sol";
 
 /**
  * @title MultiSigWalletUpgradeable contract
@@ -13,8 +11,6 @@ import { SafeCast } from "./oz-utils/SafeCast.sol";
  * @dev The implementation of the upgradeable multi-signature wallet contract.
  */
 contract MultiSigWalletUpgradeable is Initializable, MultiSigWalletBase {
-    using SafeCast for uint256;
-
     /**
      * @dev Constructor that prohibits the initialization of the implementation of the upgradable contract.
      *
@@ -40,7 +36,7 @@ contract MultiSigWalletUpgradeable is Initializable, MultiSigWalletBase {
      * @param newOwners An array of wallet owners.
      * @param newRequiredApprovals The number of required approvals to execute a transaction.
      */
-    function initialize(address[] memory newOwners, uint256 newRequiredApprovals) external initializer {
+    function initialize(address[] memory newOwners, uint16 newRequiredApprovals) external initializer {
         __BRLCMultisig_init(newOwners, newRequiredApprovals);
     }
 
@@ -49,7 +45,7 @@ contract MultiSigWalletUpgradeable is Initializable, MultiSigWalletBase {
      *
      * See {MultiSigWallet-initialize}.
      */
-    function __BRLCMultisig_init(address[] memory newOwners, uint256 newRequiredApprovals) internal onlyInitializing {
+    function __BRLCMultisig_init(address[] memory newOwners, uint16 newRequiredApprovals) internal onlyInitializing {
         __BRLCMultisig_init_unchained(newOwners, newRequiredApprovals);
     }
 
@@ -58,11 +54,11 @@ contract MultiSigWalletUpgradeable is Initializable, MultiSigWalletBase {
      *
      * See {MultiSigWallet-initialize}.
      */
-    function __BRLCMultisig_init_unchained(address[] memory newOwners, uint256 newRequiredApprovals)
+    function __BRLCMultisig_init_unchained(address[] memory newOwners, uint16 newRequiredApprovals)
         internal
         onlyInitializing
     {
         _configureExpirationTime(365 days);
-        _configureOwners(newOwners, newRequiredApprovals.toUint16());
+        _configureOwners(newOwners, newRequiredApprovals);
     }
 }
