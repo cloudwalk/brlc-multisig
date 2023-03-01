@@ -2,8 +2,6 @@
 
 pragma solidity 0.8.16;
 
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-
 import { MultiSigWallet } from "./MultiSigWallet.sol";
 
 /**
@@ -11,43 +9,35 @@ import { MultiSigWallet } from "./MultiSigWallet.sol";
  * @author CloudWalk Inc.
  * @dev The contract factory for creating new multisig wallet contracts.
  */
-contract MultiSigWalletFactory is Ownable {
+contract MultiSigWalletFactory {
     /**
-     * @dev New wallet was deployed by factory.
+     * @dev Emitted when a new multisig wallet is deployed.
      * @param deployer The address of the wallet deployer.
-     * @param newWallet The address of the deployed wallet.
+     * @param wallet The address of the deployed wallet.
      * @param id The id of the deployed wallet.
      */
-    event NewWallet(address indexed deployer, address indexed newWallet, uint indexed id);
+    event NewWallet(address indexed deployer, address indexed wallet, uint indexed id);
 
-    /// @dev The array of addresses of multisig deployed by this factory.
-    address[] internal _wallets;
+    /// @dev An array of wallets deployed by this factory.
+    address[] public wallets;
 
     /**
-     * @dev Creates and deploys new multisig wallet contract with the passed constructor parameters.
-     * @param owners The array of the owners of the deployed multisig.
-     * @param requiredApprovals The number of required approvals for multisig transactions.
-     * @return The address of the deployed multisig.
+     * @dev Deploys a new multisig wallet contract.
+     * @param owners An array of the owners of the deployed wallet.
+     * @param requiredApprovals The number of required approvals to execute transactions.
+     * @return The address of the deployed wallet.
      */
-    function deployNewWallet(address[] memory owners, uint256 requiredApprovals) external onlyOwner returns (address) {
+    function deployNewWallet(address[] memory owners, uint16 requiredApprovals) external returns (address) {
         address newWallet = address(new MultiSigWallet(owners, requiredApprovals));
-        _wallets.push(newWallet);
-        emit NewWallet(msg.sender, newWallet, _wallets.length - 1);
+        wallets.push(newWallet);
+        emit NewWallet(msg.sender, newWallet, wallets.length - 1);
         return newWallet;
     }
 
     /**
-     * @dev Returns an array of deployed wallets.
-     * @param id The id og the wallet which address will be returned.
-     */
-    function getDeployedWallet(uint256 id) external view returns (address) {
-        return _wallets[id];
-    }
-
-    /**
-     * @dev Returns the amount of deployed wallets.
+     * @dev Returns the number of deployed wallets.
      */
     function walletsCount() external view returns (uint256) {
-        return _wallets.length;
+        return wallets.length;
     }
 }
