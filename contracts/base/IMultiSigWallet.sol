@@ -10,10 +10,10 @@ interface IMultiSigWalletTypes {
     /// @dev Structure with data of a single transaction.
     struct Transaction {
         address to;         // The address of the transaction receiver.
-        uint256 value;      // The value in native tokens to be sent along with the transaction.
-        uint256 cooldown;   // The timestamp before which the transaction cannot be executed.
-        uint256 expiration; // The timestamp after which the transaction cannot be executed.
         bool executed;      // The execution status of the transaction. True if executed.
+        uint128 cooldown;   // The timestamp before which the transaction cannot be executed.
+        uint128 expiration; // The timestamp after which the transaction cannot be executed.
+        uint256 value;      // The value in native tokens to be sent along with the transaction.
         bytes data;         // The data to be sent along with the transaction.
     }
 }

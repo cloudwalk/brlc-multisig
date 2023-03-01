@@ -25,22 +25,20 @@ abstract contract MultiSigWalletStorageV1 is IMultiSigWalletTypes {
     mapping(uint256 => mapping(address => bool)) internal _approvalStatus;
 
     /// @dev The number of approvals required to execute a transaction.
-    uint256 internal _requiredApprovals;
+    uint16 internal _requiredApprovals;
 
     /// @dev The amount of time after the cooldown period during which a transaction can be executed.
-    uint256 internal _expirationTime;
+    uint120 internal _expirationTime;
 
     /// @dev The amount of time that must elapse after a transaction is submitted before it can be executed.
-    uint256 internal _cooldownTime;
+    uint120 internal _cooldownTime;
 }
 
 /**
  * @title MultiSigWallet storage
  *
- * We are following Compound's approach of upgrading new contract implementations.
- * See https://github.com/compound-finance/compound-protocol.
  * When we need to add new storage variables, we create a new version of MultiSigWalletStorage
- * e.g. MultiSigWalletStorage<versionNumber>, so finally it would look like
+ * e.g. MultiSigWalletStorage<versionNumber>, so at the end it would look like
  * "contract MultiSigWalletStorage is MultiSigWalletStorageV1, MultiSigWalletStorageV2".
  */
 abstract contract MultiSigWalletStorage is MultiSigWalletStorageV1 {

@@ -3,6 +3,7 @@
 pragma solidity 0.8.16;
 
 import { MultiSigWalletBase } from "./base/MultiSigWalletBase.sol";
+import { SafeCast } from "./oz-utils/SafeCast.sol";
 
 /**
  * @title MultiSigWallet contract
@@ -10,6 +11,8 @@ import { MultiSigWalletBase } from "./base/MultiSigWalletBase.sol";
  * @dev The implementation of the multi-signature wallet contract.
  */
 contract MultiSigWallet is MultiSigWalletBase {
+    using SafeCast for uint256;
+
     /**
      * @dev Constructor that sets multisig owners and number of required approvals.
      *
@@ -18,7 +21,6 @@ contract MultiSigWallet is MultiSigWalletBase {
      */
     constructor(address[] memory newOwners, uint256 newRequiredApprovals) {
         _configureExpirationTime(365 days);
-        _configureOwners(newOwners, newRequiredApprovals);
+        _configureOwners(newOwners, newRequiredApprovals.toUint16());
     }
-
 }
