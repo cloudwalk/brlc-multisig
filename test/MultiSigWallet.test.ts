@@ -81,7 +81,8 @@ describe("Multisig wallet contracts", () => {
     "Initializable: contract is already initialized";
 
   const REVERT_ERROR_IF_UNAUTHORIZED_CALLER = "UnauthorizedCaller";
-  const REVERT_ERROR_INVALID_OWNERS_ARRAY = "InvalidOwnersArray";
+  const REVERT_ERROR_IF_DUPLICATE_OWNER_ADDRESS = "DuplicateOwnerAddress";
+  const REVERT_ERROR_IF_EMPTY_OWNERS_ARRAY = "EmptyOwnersArray";
   const REVERT_ERROR_IF_INVALID_REQUIRED_APPROVALS = "InvalidRequiredApprovals";
   const REVERT_ERROR_IF_INTERNAL_TRANSACTION_IS_FAILED =
     "InternalTransactionFailed";
@@ -93,6 +94,7 @@ describe("Multisig wallet contracts", () => {
   const REVERT_ERROR_IF_TRANSACTION_IS_ALREADY_EXECUTED =
     "TransactionAlreadyExecuted";
   const REVERT_ERROR_IF_TRANSACTION_IS_NOT_APPROVED = "TransactionNotApproved";
+  const REVERT_ERROR_IF_ZERO_OWNER_ADDRESS = "ZeroOwnerAddress";
   const REVERT_ERROR_IF_TRANSACTION_ON_COOLDOWN = "CooldownNotEnded";
   const REVERT_ERROR_IF_TRANSACTION_EXPIRED = "TransactionExpired";
   const REVERT_MESSAGE_CALLER_NOT_OWNER = "Ownable: caller is not the owner";
@@ -301,7 +303,7 @@ describe("Multisig wallet contracts", () => {
           uninitializedWallet.initialize([], 0)
         ).to.be.revertedWithCustomError(
           walletUpgradeableFactory,
-          REVERT_ERROR_INVALID_OWNERS_ARRAY
+          REVERT_ERROR_IF_EMPTY_OWNERS_ARRAY
         );
       });
 
@@ -351,7 +353,7 @@ describe("Multisig wallet contracts", () => {
           uninitializedWallet.initialize(ownerAddressArray, requiredApprovals)
         ).to.be.revertedWithCustomError(
           walletUpgradeableFactory,
-          REVERT_ERROR_INVALID_OWNERS_ARRAY
+          REVERT_ERROR_IF_ZERO_OWNER_ADDRESS
         );
       });
 
@@ -371,7 +373,7 @@ describe("Multisig wallet contracts", () => {
           uninitializedWallet.initialize(ownerAddressArray, requiredApprovals)
         ).to.be.revertedWithCustomError(
           walletUpgradeableFactory,
-          REVERT_ERROR_INVALID_OWNERS_ARRAY
+          REVERT_ERROR_IF_DUPLICATE_OWNER_ADDRESS
         );
       });
 
@@ -459,7 +461,7 @@ describe("Multisig wallet contracts", () => {
         walletFactory.deploy([], REQUIRED_APPROVALS)
       ).to.be.revertedWithCustomError(
         walletFactory,
-        REVERT_ERROR_INVALID_OWNERS_ARRAY
+        REVERT_ERROR_IF_EMPTY_OWNERS_ARRAY
       );
     });
 
@@ -494,7 +496,7 @@ describe("Multisig wallet contracts", () => {
         walletFactory.deploy(ownerAddressArray, requiredApprovals)
       ).to.be.revertedWithCustomError(
         walletFactory,
-        REVERT_ERROR_INVALID_OWNERS_ARRAY
+        REVERT_ERROR_IF_ZERO_OWNER_ADDRESS
       );
     });
 
@@ -509,7 +511,7 @@ describe("Multisig wallet contracts", () => {
         walletFactory.deploy(ownerAddressArray, requiredApprovals)
       ).to.be.revertedWithCustomError(
         walletFactory,
-        REVERT_ERROR_INVALID_OWNERS_ARRAY
+        REVERT_ERROR_IF_DUPLICATE_OWNER_ADDRESS
       );
     });
   });
@@ -544,7 +546,7 @@ describe("Multisig wallet contracts", () => {
           factory.deployNewWallet([], REQUIRED_APPROVALS)
         ).to.be.revertedWithCustomError(
           walletFactory,
-          REVERT_ERROR_INVALID_OWNERS_ARRAY
+          REVERT_ERROR_IF_EMPTY_OWNERS_ARRAY
         );
       });
 
@@ -585,7 +587,7 @@ describe("Multisig wallet contracts", () => {
           factory.deployNewWallet(ownerAddressArray, requiredApprovals)
         ).to.be.revertedWithCustomError(
           walletFactory,
-          REVERT_ERROR_INVALID_OWNERS_ARRAY
+          REVERT_ERROR_IF_ZERO_OWNER_ADDRESS
         );
       });
 
@@ -601,12 +603,12 @@ describe("Multisig wallet contracts", () => {
           factory.deployNewWallet(ownerAddressArray, requiredApprovals)
         ).to.be.revertedWithCustomError(
           walletFactory,
-          REVERT_ERROR_INVALID_OWNERS_ARRAY
+          REVERT_ERROR_IF_ZERO_OWNER_ADDRESS
         );
       });
     });
 
-    describe("Function 'walletsCount()'", async () => {
+    describe("Function 'getWalletsCount()'", async () => {
       it("Returns the amount of deployed wallets", async () => {
         const { factory } = await setUpFixture(deployFactory);
 
@@ -679,7 +681,7 @@ describe("Multisig wallet contracts", () => {
           )
           .withArgs(
             wallet.interface.encodeErrorResult(
-              REVERT_ERROR_INVALID_OWNERS_ARRAY
+              REVERT_ERROR_IF_EMPTY_OWNERS_ARRAY
             )
           );
       });
@@ -752,7 +754,7 @@ describe("Multisig wallet contracts", () => {
           )
           .withArgs(
             wallet.interface.encodeErrorResult(
-              REVERT_ERROR_INVALID_OWNERS_ARRAY
+              REVERT_ERROR_IF_ZERO_OWNER_ADDRESS
             )
           );
       });
@@ -779,7 +781,7 @@ describe("Multisig wallet contracts", () => {
           )
           .withArgs(
             wallet.interface.encodeErrorResult(
-              REVERT_ERROR_INVALID_OWNERS_ARRAY
+              REVERT_ERROR_IF_DUPLICATE_OWNER_ADDRESS
             )
           );
       });
