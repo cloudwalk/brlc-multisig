@@ -37,24 +37,24 @@ contract MultiSigWalletUpgradeable is Initializable, MultiSigWalletBase {
      * @param newRequiredApprovals The number of required approvals to execute a transaction.
      */
     function initialize(address[] memory newOwners, uint16 newRequiredApprovals) external initializer {
-        __BRLCMultisig_init(newOwners, newRequiredApprovals);
+        __Multisig_init(newOwners, newRequiredApprovals);
     }
 
     /**
      * @dev The internal initializer of the upgradable contract.
      *
-     * See {MultiSigWallet-initialize}.
+     * See {MultiSigWalletUpgradeable-initialize}.
      */
-    function __BRLCMultisig_init(address[] memory newOwners, uint16 newRequiredApprovals) internal onlyInitializing {
-        __BRLCMultisig_init_unchained(newOwners, newRequiredApprovals);
+    function __Multisig_init(address[] memory newOwners, uint16 newRequiredApprovals) internal onlyInitializing {
+        __Multisig_init_unchained(newOwners, newRequiredApprovals);
     }
 
     /**
      * @dev The unchained internal initializer of the upgradable contract.
      *
-     * See {MultiSigWallet-initialize}.
+     * See {MultiSigWalletUpgradeable-initialize}.
      */
-    function __BRLCMultisig_init_unchained(address[] memory newOwners, uint16 newRequiredApprovals)
+    function __Multisig_init_unchained(address[] memory newOwners, uint16 newRequiredApprovals)
         internal
         onlyInitializing
     {
