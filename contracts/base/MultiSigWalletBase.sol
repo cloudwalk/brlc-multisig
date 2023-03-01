@@ -304,12 +304,14 @@ abstract contract MultiSigWalletBase is MultiSigWalletStorage, IMultiSigWallet {
         uint256 value,
         bytes calldata data
     ) internal returns (uint256 txId) {
+        uint128 blockTimestamp = toUint128(block.timestamp);
+
         _transactions.push(
             Transaction({
                 to: to,
                 executed: false,
-                cooldown: toUint128(block.timestamp) + _cooldownTime,
-                expiration: toUint128(block.timestamp) + _cooldownTime + _expirationTime,
+                cooldown: blockTimestamp + _cooldownTime,
+                expiration: blockTimestamp + _cooldownTime + _expirationTime,
                 value: value,
                 data: data
             })
