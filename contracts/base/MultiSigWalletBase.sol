@@ -28,14 +28,8 @@ abstract contract MultiSigWalletBase is MultiSigWalletStorage, IMultiSigWallet {
     /// @dev A transaction with the specified Id is already approved by the caller.
     error TransactionAlreadyApproved();
 
-    /// @dev An empty array of addresses was passed when configuring the wallet owners.
-    error EmptyOwnersArray();
-
-    /// @dev The zero address was passed within the owners array when configuring the wallet owners.
-    error ZeroOwnerAddress();
-
-    /// @dev A duplicate address was passed within the owners array when configuring the wallet owners.
-    error DuplicateOwnerAddress();
+    /// @dev Invalid owners array was passed when configuring the wallet owners.
+    error InvalidOwnersArray();
 
     /// @dev An invalid number of required approvals was passed when configuring the wallet owners.
     error InvalidRequiredApprovals();
@@ -412,7 +406,7 @@ abstract contract MultiSigWalletBase is MultiSigWalletStorage, IMultiSigWallet {
      */
     function _configureOwners(address[] memory newOwners, uint16 newRequiredApprovals) internal {
         if (newOwners.length == 0) {
-            revert EmptyOwnersArray();
+            revert InvalidOwnersArray();
         }
         if (newRequiredApprovals == 0) {
             revert InvalidRequiredApprovals();
@@ -435,10 +429,10 @@ abstract contract MultiSigWalletBase is MultiSigWalletStorage, IMultiSigWallet {
             owner = newOwners[i];
 
             if (owner == address(0)) {
-                revert ZeroOwnerAddress();
+                revert InvalidOwnersArray();
             }
             if (_isOwner[owner]) {
-                revert DuplicateOwnerAddress();
+                revert InvalidOwnersArray();
             }
 
             _isOwner[owner] = true;
