@@ -48,7 +48,7 @@ async function setUpFixture(func: any) {
   }
 }
 
-describe("Multisig wallet contracts", () => {
+describe("MultiSigWallet contract", () => {
   const REQUIRED_APPROVALS = 2;
   const ONE_SECOND = 1;
   const ONE_MINUTE = 60;
@@ -61,11 +61,6 @@ describe("Multisig wallet contracts", () => {
   );
   const DEFAULT_ERROR_DATA = "0x";
 
-  const HARDHAT_PROXY_ADMIN_ADDRESS =
-    "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
-  const HARDHAT_FIRST_DEPLOYED_WALLET_ADDRESS =
-    "0xF1823bc4243b40423b8C8c3F6174e687a4C690b8";
-
   const EVENT_NAME_APPROVE = "Approve";
   const EVENT_NAME_DEPOSIT = "Deposit";
   const EVENT_NAME_EXECUTE = "Execute";
@@ -75,10 +70,6 @@ describe("Multisig wallet contracts", () => {
   const EVENT_NAME_CONFIGURE_OWNERS = "ConfigureOwners";
   const EVENT_NAME_CONFIGURE_COOLDOWN_TIME = "ConfigureCooldownTime";
   const EVENT_NAME_CONFIGURE_EXPIRATION_TIME = "ConfigureExpirationTime";
-  const EVENT_NAME_NEW_WALLET_DEPLOYED_BY_FACTORY = "NewWallet";
-
-  const REVERT_MESSAGE_IF_CONTRACT_IS_ALREADY_INITIALIZED =
-    "Initializable: contract is already initialized";
 
   const REVERT_ERROR_IF_UNAUTHORIZED_CALLER = "UnauthorizedCaller";
   const REVERT_ERROR_IF_DUPLICATE_OWNER_ADDRESS = "DuplicateOwnerAddress";
@@ -97,7 +88,6 @@ describe("Multisig wallet contracts", () => {
   const REVERT_ERROR_IF_ZERO_OWNER_ADDRESS = "ZeroOwnerAddress";
   const REVERT_ERROR_IF_TRANSACTION_ON_COOLDOWN = "CooldownNotEnded";
   const REVERT_ERROR_IF_TRANSACTION_EXPIRED = "TransactionExpired";
-  const REVERT_MESSAGE_CALLER_NOT_OWNER = "Ownable: caller is not the owner";
 
   let tokenFactory: ContractFactory;
   let walletUpgradeableFactory: ContractFactory;
@@ -121,12 +111,7 @@ describe("Multisig wallet contracts", () => {
       "MultiSigWalletUpgradeable"
     );
     walletFactory = await ethers.getContractFactory("MultiSigWallet");
-    factoryContractFactory = await ethers.getContractFactory(
-      "MultiSigWalletFactory"
-    );
     tokenFactory = await ethers.getContractFactory("TestContractMock");
-    proxyAdminFactory = await ethers.getContractFactory("ProxyAdminMock");
-    mockWalletFactory = await ethers.getContractFactory("MultiSigWallet");
   });
 
   async function checkOwnership(
@@ -214,232 +199,18 @@ describe("Multisig wallet contracts", () => {
     };
   }
 
-  async function deployFactory(): Promise<{ factory: Contract }> {
-    const factory = await factoryContractFactory.deploy();
-    await factory.deployed();
-    return {
-      factory,
-    };
-  }
-
-  async function deployWalletContractMock(): Promise<{
-    walletContractMock: Contract;
-  }> {
-    const walletContractMock = await mockWalletFactory.deploy(
-      ownerAddresses,
-      REQUIRED_APPROVALS
-    );
-    await walletContractMock.deployed();
-
-    return {
-      walletContractMock,
-    };
-  }
-
-  async function getProxyAdminContract(): Promise<{
-    admin: Contract;
-  }> {
-    const admin = await ethers.getContractAt(
-      "ProxyAdminMock",
-      HARDHAT_PROXY_ADMIN_ADDRESS
-    );
-    return {
-      admin,
-    };
-  }
-
   async function deployAllContracts(): Promise<{
     wallet: Contract;
     testContractMock: Contract;
-    admin: Contract;
-    walletContractMock: Contract;
-    factory: Contract;
   }> {
     const { wallet } = await deployWalletUpgradeable();
     const { testContractMock } = await deployTestContractMock();
-    const { admin } = await getProxyAdminContract();
-    const { walletContractMock } = await deployWalletContractMock();
-    const { factory } = await deployFactory();
 
     return {
       wallet,
       testContractMock,
-      admin,
-      walletContractMock,
-      factory,
     };
   }
-
-  describe("Contract 'MultiSigWalletUpgradeable'", () => {
-    describe("Function 'initialize()'", () => {
-      it("Configures the contract as expected", async () => {
-        const { wallet } = await setUpFixture(deployWalletUpgradeable);
-
-        expect(await wallet.owners()).to.deep.eq(ownerAddresses);
-        expect(await wallet.requiredApprovals()).to.eq(REQUIRED_APPROVALS);
-        expect(await wallet.transactionCount()).to.eq(0);
-        expect(await wallet.cooldownTime()).to.eq(0);
-        expect(await wallet.expirationTime()).to.eq(ONE_YEAR);
-        await checkOwnership(wallet, {
-          ownerAddresses,
-          expectedOwnershipStatus: true,
-        });
-      });
-
-      it("Is reverted if it is called a second time", async () => {
-        const { wallet } = await setUpFixture(deployWalletUpgradeable);
-        await expect(
-          wallet.initialize(ownerAddresses, REQUIRED_APPROVALS)
-        ).to.be.revertedWith(REVERT_MESSAGE_IF_CONTRACT_IS_ALREADY_INITIALIZED);
-      });
-
-      it("Is reverted if the input owner array is empty", async () => {
-        const uninitializedWallet = await upgrades.deployProxy(
-          walletUpgradeableFactory,
-          [],
-          { initializer: false }
-        );
-        await expect(
-          uninitializedWallet.initialize([], 0)
-        ).to.be.revertedWithCustomError(
-          walletUpgradeableFactory,
-          REVERT_ERROR_IF_EMPTY_OWNERS_ARRAY
-        );
-      });
-
-      it("Is reverted if the input number of required approvals is zero", async () => {
-        const uninitializedWallet = await upgrades.deployProxy(
-          walletUpgradeableFactory,
-          [],
-          { initializer: false }
-        );
-        const requiredApprovals = 0;
-        await expect(
-          uninitializedWallet.initialize(ownerAddresses, requiredApprovals)
-        ).to.be.revertedWithCustomError(
-          walletUpgradeableFactory,
-          REVERT_ERROR_IF_INVALID_REQUIRED_APPROVALS
-        );
-      });
-
-      it("Is reverted if the input number of required approvals exceeds the length of the input owner array", async () => {
-        const uninitializedWallet = await upgrades.deployProxy(
-          walletUpgradeableFactory,
-          [],
-          { initializer: false }
-        );
-        const requiredApprovals = ownerAddresses.length + 1;
-        await expect(
-          uninitializedWallet.initialize(ownerAddresses, requiredApprovals)
-        ).to.be.revertedWithCustomError(
-          walletUpgradeableFactory,
-          REVERT_ERROR_IF_INVALID_REQUIRED_APPROVALS
-        );
-      });
-
-      it("Is reverted if one of the input owners is the zero address", async () => {
-        const uninitializedWallet = await upgrades.deployProxy(
-          walletUpgradeableFactory,
-          [],
-          { initializer: false }
-        );
-        const ownerAddressArray = [
-          ownerAddresses[0],
-          ownerAddresses[1],
-          ethers.constants.AddressZero,
-        ];
-        const requiredApprovals = ownerAddressArray.length - 1;
-        await expect(
-          uninitializedWallet.initialize(ownerAddressArray, requiredApprovals)
-        ).to.be.revertedWithCustomError(
-          walletUpgradeableFactory,
-          REVERT_ERROR_IF_ZERO_OWNER_ADDRESS
-        );
-      });
-
-      it("Is reverted if there is a duplicate address in the input owner array", async () => {
-        const uninitializedWallet = await upgrades.deployProxy(
-          walletUpgradeableFactory,
-          [],
-          { initializer: false }
-        );
-        const ownerAddressArray = [
-          ownerAddresses[0],
-          ownerAddresses[1],
-          ownerAddresses[0],
-        ];
-        const requiredApprovals = ownerAddresses.length - 1;
-        await expect(
-          uninitializedWallet.initialize(ownerAddressArray, requiredApprovals)
-        ).to.be.revertedWithCustomError(
-          walletUpgradeableFactory,
-          REVERT_ERROR_IF_DUPLICATE_OWNER_ADDRESS
-        );
-      });
-
-      it("Is reverted for the contract implementation if it is called even for the first time", async () => {
-        const wallet = await walletUpgradeableFactory.deploy();
-        await wallet.deployed();
-
-        await expect(
-          wallet.initialize(ownerAddresses, REQUIRED_APPROVALS)
-        ).to.be.revertedWith(REVERT_MESSAGE_IF_CONTRACT_IS_ALREADY_INITIALIZED);
-      });
-    });
-
-    describe("Transferring upgradeable functionality and upgrading", () => {
-      it("Deployer can transfer ProxyAdmin ownership to wallet itself", async () => {
-        const { admin, wallet } = await setUpFixture(deployAllContracts);
-
-        await admin.transferOwnership(wallet.address);
-        const newOwner = await admin.owner();
-
-        expect(newOwner).to.eq(wallet.address);
-      });
-
-      it("Upgrades multisig to te new implementaton from multisig itself", async () => {
-        const { wallet, walletContractMock, admin } = await setUpFixture(
-          deployAllContracts
-        );
-
-        await admin.transferOwnership(wallet.address);
-        const newOwner = await admin.owner();
-
-        expect(newOwner).to.eq(wallet.address);
-
-        const upgradeData = encodeUpgradeFunctionData(
-          wallet.address,
-          walletContractMock.address
-        );
-
-        await wallet
-          .connect(owner1)
-          .submitAndApprove(admin.address, 0, upgradeData);
-        await wallet.connect(owner2).approveAndExecute(0);
-
-        const newImplementation = await admin.getProxyImplementation(
-          wallet.address
-        );
-
-        expect(newImplementation).to.eq(walletContractMock.address);
-      });
-
-      it("Upgrade is reverted if caller is not a multisig", async () => {
-        const { admin, wallet, walletContractMock } = await setUpFixture(
-          deployAllContracts
-        );
-
-        await admin.transferOwnership(wallet.address);
-        const newOwner = await admin.owner();
-
-        expect(newOwner).to.eq(wallet.address);
-
-        await expect(
-          admin.upgrade(wallet.address, walletContractMock.address)
-        ).to.be.revertedWith(REVERT_MESSAGE_CALLER_NOT_OWNER);
-      });
-    });
-  });
 
   describe("Contract 'MultiSigWallet'", async () => {
     it("Constructor configures wallet as expected", async () => {
@@ -513,109 +284,6 @@ describe("Multisig wallet contracts", () => {
         walletFactory,
         REVERT_ERROR_IF_DUPLICATE_OWNER_ADDRESS
       );
-    });
-  });
-
-  describe("Contract 'MultiSigWalletFactory'", () => {
-    describe("Function 'deployNewWallet()'", () => {
-      it("Creates new wallet instance with selected parameters and emits the event", async () => {
-        const { factory } = await setUpFixture(deployFactory);
-
-        await expect(
-          await factory.deployNewWallet(ownerAddresses, REQUIRED_APPROVALS)
-        )
-          .to.emit(factory, EVENT_NAME_NEW_WALLET_DEPLOYED_BY_FACTORY)
-          .withArgs(deployer.address, HARDHAT_FIRST_DEPLOYED_WALLET_ADDRESS, 0);
-
-        const walletAddress = await factory.wallets(0);
-        const wallet = await ethers.getContractAt(
-          "MultiSigWallet",
-          walletAddress
-        );
-        expect(await wallet.owners()).to.deep.eq(ownerAddresses);
-        expect(await wallet.requiredApprovals()).to.eq(REQUIRED_APPROVALS);
-        expect(await wallet.transactionCount()).to.eq(0);
-        expect(await wallet.cooldownTime()).to.eq(0);
-        expect(await wallet.expirationTime()).to.eq(ONE_YEAR);
-      });
-
-      it("Is reverted if the input owner array is empty", async () => {
-        const { factory } = await setUpFixture(deployFactory);
-
-        await expect(
-          factory.deployNewWallet([], REQUIRED_APPROVALS)
-        ).to.be.revertedWithCustomError(
-          walletFactory,
-          REVERT_ERROR_IF_EMPTY_OWNERS_ARRAY
-        );
-      });
-
-      it("Is reverted if the input number of required approvals is zero", async () => {
-        const { factory } = await setUpFixture(deployFactory);
-
-        const requiredApprovals = 0;
-        await expect(
-          factory.deployNewWallet(ownerAddresses, requiredApprovals)
-        ).to.be.revertedWithCustomError(
-          walletFactory,
-          REVERT_ERROR_IF_INVALID_REQUIRED_APPROVALS
-        );
-      });
-
-      it("Is reverted if the input number of required approvals exceeds the length of the input owner array", async () => {
-        const { factory } = await setUpFixture(deployFactory);
-
-        const requiredApprovals = ownerAddresses.length + 1;
-        await expect(
-          factory.deployNewWallet(ownerAddresses, requiredApprovals)
-        ).to.be.revertedWithCustomError(
-          walletFactory,
-          REVERT_ERROR_IF_INVALID_REQUIRED_APPROVALS
-        );
-      });
-
-      it("Is reverted if one of the input owners is the zero address", async () => {
-        const { factory } = await setUpFixture(deployFactory);
-        const ownerAddressArray = [
-          ownerAddresses[0],
-          ownerAddresses[1],
-          ethers.constants.AddressZero,
-        ];
-        const requiredApprovals = ownerAddressArray.length - 1;
-
-        await expect(
-          factory.deployNewWallet(ownerAddressArray, requiredApprovals)
-        ).to.be.revertedWithCustomError(
-          walletFactory,
-          REVERT_ERROR_IF_ZERO_OWNER_ADDRESS
-        );
-      });
-
-      it("Deployment is reverted if there is a duplicate address in the input owner array", async () => {
-        const { factory } = await setUpFixture(deployFactory);
-        const ownerAddressArray = [
-          ownerAddresses[0],
-          ownerAddresses[1],
-          ethers.constants.AddressZero,
-        ];
-        const requiredApprovals = ownerAddresses.length - 1;
-        await expect(
-          factory.deployNewWallet(ownerAddressArray, requiredApprovals)
-        ).to.be.revertedWithCustomError(
-          walletFactory,
-          REVERT_ERROR_IF_ZERO_OWNER_ADDRESS
-        );
-      });
-    });
-
-    describe("Function 'getWalletsCount()'", async () => {
-      it("Returns the amount of deployed wallets", async () => {
-        const { factory } = await setUpFixture(deployFactory);
-
-        expect(await factory.walletsCount()).to.eq(0);
-        await factory.deployNewWallet(ownerAddresses, REQUIRED_APPROVALS);
-        expect(await factory.walletsCount()).to.eq(1);
-      });
     });
   });
 
