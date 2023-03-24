@@ -3,6 +3,8 @@
 pragma solidity 0.8.16;
 
 import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+
 import { MultiSigWalletBase } from "./base/MultiSigWalletBase.sol";
 
 /**
@@ -10,7 +12,7 @@ import { MultiSigWalletBase } from "./base/MultiSigWalletBase.sol";
  * @author CloudWalk Inc.
  * @dev The implementation of the upgradeable multi-signature wallet contract.
  */
-contract MultiSigWalletUpgradeable is Initializable, MultiSigWalletBase {
+contract MultiSigWalletUpgradeable is Initializable, MultiSigWalletBase, UUPSUpgradeable {
     /**
      * @dev Constructor that prohibits the initialization of the implementation of the upgradable contract.
      *
@@ -58,7 +60,25 @@ contract MultiSigWalletUpgradeable is Initializable, MultiSigWalletBase {
         internal
         onlyInitializing
     {
+        //__UUPSUpgradeable_init_unchained();
         _configureExpirationTime(365 days);
         _configureOwners(newOwners, newRequiredApprovals);
     }
+
+    /**
+     * @dev Upgrade authorization function.
+     *
+     * See details: https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable
+     *
+     * @param newImplementation The address of the new implementation
+     *
+     * Requirements:
+     *
+     * - The caller must be the multisig itself.
+     */
+    function _authorizeUpgrade(address newImplementation)
+        internal
+        onlySelfCall
+        override
+    {}
 }
