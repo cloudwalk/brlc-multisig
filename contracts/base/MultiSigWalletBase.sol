@@ -11,6 +11,11 @@ import { MultiSigWalletStorage } from "./MultiSigWalletStorage.sol";
  * @dev The base of the multi-signature wallet contract.
  */
 abstract contract MultiSigWalletBase is MultiSigWalletStorage, IMultiSigWallet {
+    // --------------------------- Constants ---------------------------
+
+    /// @dev The minimal transaction expiration time.
+    uint256 public constant MINIMUM_EXPIRATION_TIME = 60 minutes;
+
     // --------------------------- Errors ---------------------------
 
     /// @dev An unauthorized account called a function.
@@ -51,6 +56,9 @@ abstract contract MultiSigWalletBase is MultiSigWalletStorage, IMultiSigWallet {
 
     /// @dev A transaction with the specified Id is on cooldown.
     error CooldownNotEnded();
+
+    /// @dev The invalid amount of time was passed when configuring the expiration time.
+    error InvalidExpirationTime();
 
     // ------------------------- Modifiers --------------------------
 
@@ -454,6 +462,9 @@ abstract contract MultiSigWalletBase is MultiSigWalletStorage, IMultiSigWallet {
      * @dev See {MultiSigWallet-configureExpirationTime}.
      */
     function _configureExpirationTime(uint120 newExpirationTime) internal {
+        if (newExpirationTime < MINIMUM_EXPIRATION_TIME) {
+            revert InvalidExpirationTime();
+        }
         _expirationTime = newExpirationTime;
         emit ConfigureExpirationTime(newExpirationTime);
     }
