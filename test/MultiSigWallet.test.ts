@@ -50,8 +50,9 @@ async function setUpFixture(func: any) {
 
 describe("MultiSigWallet contract", () => {
   const REQUIRED_APPROVALS = 2;
-  const ONE_SECOND = 1;
   const ONE_MINUTE = 60;
+  const TWO_HOURS = 7200;
+  const ONE_DAY = 3600 * 24;
   const ONE_YEAR = 3600 * 24 * 365;
 
   const ADDRESS_STUB = "0x0000000000000000000000000000000000000001";
@@ -458,16 +459,16 @@ describe("MultiSigWallet contract", () => {
     describe("Function 'configureCooldownTime()'", () => {
       it("Correctly changes the transaction cooldown time", async () => {
         const { wallet } = await setUpFixture(deployWallet);
-        const txData = encodeConfigureCooldownTimeFunctionData(ONE_MINUTE);
+        const txData = encodeConfigureCooldownTimeFunctionData(TWO_HOURS);
 
         await proveTx(
           wallet.connect(owner1).submitAndApprove(wallet.address, 0, txData)
         );
         await expect(wallet.connect(owner2).approveAndExecute(0))
           .to.emit(wallet, EVENT_NAME_CONFIGURE_COOLDOWN_TIME)
-          .withArgs(ONE_MINUTE);
+          .withArgs(TWO_HOURS);
 
-        expect(await wallet.cooldownTime()).to.eq(ONE_MINUTE);
+        expect(await wallet.cooldownTime()).to.eq(TWO_HOURS);
       });
 
       it("Is reverted if the caller is not the multi sig wallet itself", async () => {
@@ -485,16 +486,16 @@ describe("MultiSigWallet contract", () => {
       it("Correctly changes the transaction expiration time", async () => {
         const { wallet } = await setUpFixture(deployWallet);
         const txData =
-          encodeConfigureExpirationTimeTimeFunctionData(ONE_MINUTE);
+          encodeConfigureExpirationTimeTimeFunctionData(ONE_YEAR);
 
         await proveTx(
           wallet.connect(owner1).submitAndApprove(wallet.address, 0, txData)
         );
         await expect(wallet.connect(owner2).approveAndExecute(0))
           .to.emit(wallet, EVENT_NAME_CONFIGURE_EXPIRATION_TIME)
-          .withArgs(ONE_MINUTE);
+          .withArgs(ONE_YEAR);
 
-        expect(await wallet.expirationTime()).to.eq(ONE_MINUTE);
+        expect(await wallet.expirationTime()).to.eq(ONE_YEAR);
       });
 
       it("Is reverted if the caller is not the multi sig wallet itself", async () => {
@@ -505,6 +506,18 @@ describe("MultiSigWallet contract", () => {
           wallet,
           REVERT_ERROR_IF_UNAUTHORIZED_CALLER
         );
+      });
+
+      it("Is reverted if passed expiration time is less than minimal allowed", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        const txData =
+          encodeConfigureExpirationTimeTimeFunctionData(ONE_MINUTE);
+
+        await proveTx(
+          wallet.connect(owner1).submitAndApprove(wallet.address, 0, txData)
+        );
+        await expect(wallet.connect(owner2).approveAndExecute(0))
+          .to.be.revertedWithCustomError(wallet, REVERT_ERROR_IF_INTERNAL_TRANSACTION_IS_FAILED)
       });
     });
 
@@ -1064,7 +1077,7 @@ describe("MultiSigWallet contract", () => {
 
       it("Submission of a transaction sets the cooldown and expiration fields properly", async () => {
         const { wallet } = await setUpFixture(deployWallet);
-        const txData = encodeConfigureCooldownTimeFunctionData(ONE_MINUTE);
+        const txData = encodeConfigureCooldownTimeFunctionData(TWO_HOURS);
         const txId = await executeWalletTx({ wallet, txData });
 
         const txReceipt = await proveTx(
@@ -1074,15 +1087,15 @@ describe("MultiSigWallet contract", () => {
         const txStruct = await wallet.getTransaction(txId);
         const block = await wallet.provider.getBlock(txReceipt.blockNumber);
         const blockTimestamp: number = block.timestamp;
-        expect(txStruct.cooldown).to.eq(blockTimestamp + ONE_MINUTE);
+        expect(txStruct.cooldown).to.eq(blockTimestamp + TWO_HOURS);
         expect(txStruct.expiration).to.eq(
-          blockTimestamp + ONE_MINUTE + ONE_YEAR
+          blockTimestamp + TWO_HOURS + ONE_YEAR
         );
       });
 
       it("Execution of a transaction is reverted if the transaction is still on the cooldown", async () => {
         const { wallet } = await setUpFixture(deployWallet);
-        const txData = encodeConfigureCooldownTimeFunctionData(ONE_MINUTE);
+        const txData = encodeConfigureCooldownTimeFunctionData(TWO_HOURS);
         const txId = await executeWalletTx({ wallet, txData });
 
         await proveTx(
@@ -1100,13 +1113,13 @@ describe("MultiSigWallet contract", () => {
       it("Approval of a transaction is reverted if the transaction is already expired", async () => {
         const { wallet } = await setUpFixture(deployWallet);
         const txData =
-          encodeConfigureExpirationTimeTimeFunctionData(ONE_SECOND);
+          encodeConfigureExpirationTimeTimeFunctionData(ONE_DAY);
         const txId = await executeWalletTx({ wallet, txData });
 
         await proveTx(
           wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data)
         );
-        await wait(2 * ONE_SECOND);
+        await wait(2 * ONE_DAY);
         await expect(
           wallet.connect(owner2).approve(txId)
         ).to.be.revertedWithCustomError(
@@ -1130,7 +1143,7 @@ describe("MultiSigWallet contract", () => {
         let txId = await executeWalletTx({ wallet, txData });
 
         // Set the new expiration time
-        txData = encodeConfigureExpirationTimeTimeFunctionData(ONE_SECOND);
+        txData = encodeConfigureExpirationTimeTimeFunctionData(ONE_DAY);
         await proveTx(
           wallet.connect(owner1).submitAndApprove(wallet.address, 0, txData)
         );
@@ -1145,7 +1158,7 @@ describe("MultiSigWallet contract", () => {
         await proveTx(
           wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data)
         );
-        await wait(2 * ONE_SECOND);
+        await wait(2 * ONE_DAY);
         await expect(
           wallet.connect(owner1).execute(txId)
         ).to.be.revertedWithCustomError(
@@ -1160,7 +1173,7 @@ describe("MultiSigWallet contract", () => {
         await proveTx(
           wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data)
         );
-        await wait(2 * ONE_SECOND);
+        await wait(2 * ONE_DAY);
         await expect(
           wallet.connect(owner1).revoke(txId)
         ).to.be.revertedWithCustomError(

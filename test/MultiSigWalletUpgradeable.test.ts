@@ -23,7 +23,7 @@ describe("Contract 'MultiSigWalletUpgradeable'", () => {
   const REVERT_ERROR_IF_EMPTY_OWNERS_ARRAY = "EmptyOwnersArray";
   const REVERT_ERROR_IF_INVALID_REQUIRED_APPROVALS = "InvalidRequiredApprovals";
   const REVERT_ERROR_IF_ZERO_OWNER_ADDRESS = "ZeroOwnerAddress";
-  const REVERT_MESSAGE_CALLER_NOT_OWNER = "Ownable: caller is not the owner";
+  const REVERT_ERROR_UNAUTHORIZED_CALLER = "UnauthorizedCaller";
 
   let tokenFactory: ContractFactory;
   let walletUpgradeableFactory: ContractFactory;
@@ -64,17 +64,6 @@ describe("Contract 'MultiSigWalletUpgradeable'", () => {
     }
   }
 
-  async function encodeUpgradeFunctionData(
-    proxy: string,
-    newImplementation: string
-  ) {
-    const adminInterface = await (await upgrades.admin.getInstance()).interface;
-    return adminInterface.encodeFunctionData("upgrade", [
-      proxy,
-      newImplementation,
-    ]);
-  }
-
   async function deployWalletUpgradeable(): Promise<{ wallet: Contract }> {
     const wallet = await upgrades.deployProxy(walletUpgradeableFactory, [
       ownerAddresses,
@@ -97,34 +86,31 @@ describe("Contract 'MultiSigWalletUpgradeable'", () => {
     await walletImplementation.deployed();
 
     return {
-        walletImplementation,
-    };
-  }
-
-  async function getProxyAdminContract(proxy: string): Promise<{
-    admin: Contract;
-  }> {
-    const proxyAddress = await upgrades.erc1967.getAdminAddress(proxy);
-    const admin = await ethers.getContractAt("ProxyAdminMock", proxyAddress);
-    return {
-      admin,
+      walletImplementation,
     };
   }
 
   async function deployAllContracts(): Promise<{
     wallet: Contract;
-    admin: Contract;
     walletImplementation: Contract;
   }> {
     const { wallet } = await deployWalletUpgradeable();
-    const { admin } = await getProxyAdminContract(wallet.address);
     const { walletImplementation } = await deployWalletImplementation();
 
     return {
       wallet,
-      admin,
       walletImplementation,
     };
+  }
+
+  async function encodeUpgradeFunctionData(newImplementation: string) {
+    const { wallet } = await deployWalletUpgradeable();
+    let ABI = ["function upgradeTo(address newImplementation)"];
+    const upgradeInterface = new ethers.utils.Interface(ABI);
+    const upgradeData = await upgradeInterface.encodeFunctionData("upgradeTo", [
+      newImplementation,
+    ]);
+    return upgradeData;
   }
 
   describe("Function 'initialize()'", () => {
@@ -243,56 +229,13 @@ describe("Contract 'MultiSigWalletUpgradeable'", () => {
     });
   });
 
-  describe("Transferring upgradeable functionality and upgrading", () => {
-    it("Deployer can transfer ProxyAdmin ownership to wallet itself", async () => {
-      const { admin, wallet } = await setUpFixture(deployAllContracts);
-
-      await admin.transferOwnership(wallet.address);
-      const newOwner = await admin.owner();
-
-      expect(newOwner).to.eq(wallet.address);
-    });
-
-    it("Upgrades multisig to the new implementaton from multisig itself", async () => {
-      const { wallet, walletImplementation, admin } = await setUpFixture(
-        deployAllContracts
-      );
-
-      await admin.transferOwnership(wallet.address);
-      const newOwner = await admin.owner();
-
-      expect(newOwner).to.eq(wallet.address);
-
-      const upgradeData = encodeUpgradeFunctionData(
-        wallet.address,
-        walletImplementation.address
-      );
-
-      await wallet
-        .connect(owner1)
-        .submitAndApprove(admin.address, 0, upgradeData);
-      await wallet.connect(owner2).approveAndExecute(0);
-
-      const newImplementation = await admin.getProxyImplementation(
-        wallet.address
-      );
-
-      expect(newImplementation).to.eq(walletImplementation.address);
-    });
-
+  describe("Scenarios with contract upgrades", () => {
     it("Upgrade is reverted if caller is not a multisig", async () => {
-      const { admin, wallet, walletImplementation } = await setUpFixture(
-        deployAllContracts
-      );
-
-      await admin.transferOwnership(wallet.address);
-      const newOwner = await admin.owner();
-
-      expect(newOwner).to.eq(wallet.address);
+      const { wallet } = await setUpFixture(deployAllContracts);
 
       await expect(
-        admin.upgrade(wallet.address, walletImplementation.address)
-      ).to.be.revertedWith(REVERT_MESSAGE_CALLER_NOT_OWNER);
+        wallet.upgradeTo(wallet.address)
+      ).to.be.revertedWithCustomError(wallet, REVERT_ERROR_UNAUTHORIZED_CALLER);
     });
   });
 });
