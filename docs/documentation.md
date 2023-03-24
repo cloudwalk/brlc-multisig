@@ -26,70 +26,71 @@ BRLC-multisig is a multi-signature wallet used to ensure the decentralization an
 
 Function `submit` - submits new transaction and adds it to transactions array. Emits a `Submit` event. Can be called only by the owner.
 
-Function `submitAndApprove` - submits new transaction and adds it to transactions array. Emits a `Submit` event. Approves submitted transaction. Emits an `Approve` event. Should be called only by the owner.
+Function `submitAndApprove` - submits new transaction and adds it to transactions array. Emits a `Submit` event. Approves submitted transaction. Emits an`Approve` event. Can be called only by the owner.
 <ul>
-    <li>Should be reverted if the selected transaction does not exist.</li>
-    <li>Should be reverted if the selected transaction is expired.</li>
-    <li>Should be reverted if the selected transaction is executed.</li>
-    <li>Should be reverted if the selected transaction is already approved by the caller.</li>
+    <li>Reverts if the selected transaction does not exist.</li>
+    <li>Reverts if the selected transaction is expired.</li>
+    <li>Reverts if the selected transaction is executed.</li>
+    <li>Reverts if the selected transaction is already approved by the caller.</li>
 </ul>
 
-Function `approve` - approves selected transaction. Emits an `Approve` event. Should be called only by the owner.
+Function `approve` - approves selected transaction. Emits an `Approve` event. Can be called only by the owner.
 <ul>
-    <li>Should be reverted if the selected transaction does not exist.</li>
-    <li>Should be reverted if the selected transaction is expired.</li>
-    <li>Should be reverted if the selected transaction is executed.</li>
-    <li>Should be reverted if the selected transaction is already approved by the caller.</li>
+    <li>Reverts if the selected transaction does not exist.</li>
+    <li>Reverts if the selected transaction is expired.</li>
+    <li>Reverts if the selected transaction is executed.</li>
+    <li>Reverts if the selected transaction is already approved by the caller.</li>
 </ul>
 
-Function `approveAndExecute` - approves and executes the selected transaction. Emits an `Approve` event. Executes transaction. Emits an `Execute` event. Should be called only by the owner.
+Function `approveAndExecute` - approves and executes the selected transaction. Emits an `Approve` event. Executes transaction. Emits an `Execute` event. Can be called only by the owner.
 <ul>
-    <li>Should be reverted if the selected transaction does not exist.</li>
-    <li>Should be reverted if the selected transaction is expired.</li>
-    <li>Should be reverted if the selected transaction is executed.</li>
-    <li>Should be reverted if the selected transaction is already approved by the caller.</li>
-    <li>Should be reverted if the selected transaction is executed.</li>
-    <li>Should be reverted if the selected transaction is on cooldown.</li>
-    <li>Should be reverted if the approvals amount is less than the amount of required approvals.</li>
+    <li>Reverts if the selected transaction does not exist.</li>
+    <li>Reverts if the selected transaction is expired.</li>
+    <li>Reverts if the selected transaction is executed.</li>
+    <li>Reverts if the selected transaction is already approved by the caller.</li>
+    <li>Reverts if the selected transaction is executed.</li>
+    <li>Reverts if the selected transaction is on cooldown.</li>
+    <li>Reverts if the approvals amount is less than the amount of required approvals.</li>
 </ul>
 
-Function `execute` - executes the selected transaction. Emits an `Execute` event. Should be called only by the owner.
+Function `execute` - executes the selected transaction. Emits an `Execute` event. Can be called only by the owner. Allows repeating execution attempt if previous execution failed. Owners are able to choose the order of the execution of approved transactions.
 <ul>
-    <li>Should be reverted if the selected transaction does not exist.</li>
-    <li>Should be reverted if the selected transaction is expired.</li>
-    <li>Should be reverted if the selected transaction is executed.</li>
-    <li>Should be reverted if the selected transaction is on cooldown.</li>
-    <li>Should be reverted if the approvals amount is less than the amount of required approvals.</li>
-    <li>Should be reverted if the transaction execution fails.</li>
+    <li>Reverts if the selected transaction does not exist.</li>
+    <li>Reverts if the selected transaction is expired.</li>
+    <li>Reverts if the selected transaction is executed.</li>
+    <li>Reverts if the selected transaction is on cooldown.</li>
+    <li>Reverts if the approvals amount is less than the amount of required approvals.</li>
+    <li>Reverts if the transaction execution fails.</li>
 </ul>
 
-Function `revoke` - revokes approval from the selected transaction. Emits a `Revoke` event. Should be called only by the owner.
+Function `revoke` - revokes approval from the selected transaction. Emits a `Revoke` event. Can be called only by the owner.
 <ul>
-    <li>Should be reverted if the selected transaction does not exist.</li>
-    <li>Should be reverted if the selected transaction is expired.</li>
-    <li>Should be reverted if the selected transaction is executed.</li>
-    <li>Should be reverted if the selected transaction is not approved by the caller.</li>
+    <li>Reverts if the selected transaction does not exist.</li>
+    <li>Reverts if the selected transaction is expired.</li>
+    <li>Reverts if the selected transaction is executed.</li>
+    <li>Reverts if the selected transaction is not approved by the caller.</li>
 </ul>
 
-Function `configureOwners` - changes owners array and amount of required approvals. Emits a `ConfigureOwners` event.
+Function `configureOwners` - changes owners array and amount of required approvals. Emits a `ConfigureOwners` event. Function execution does not change the state of submitted transactions, the amount of approvals made by previous owners will stay the same.
 <ul>
-    <li>Should be reverted if the caller is not a multisig itself.</li>
-    <li>Should be reverted if the array of owners is empty.</li>
-    <li>Should be reverted if one of the owners is zero address.</li>
-    <li>Should be reverted if the owner address is duplicated.</li>
-    <li>Should be reverted if the number of required approvals is bigger than the amount of owners.</li>
-    <li>Should be reverted if the number of required approvals is zero.</li>
+    <li>Reverts if the caller is not a multisig itself.</li>
+    <li>Reverts if the array of owners is empty.</li>
+    <li>Reverts if one of the owners is zero address.</li>
+    <li>Reverts if the owner address is duplicated.</li>
+    <li>Reverts if the number of required approvals is bigger than the amount of owners.</li>
+    <li>Reverts if the number of required approvals is zero.</li>
 </ul>
 
-Function `configureExpirationTime` - changes default expiration time of transactions. Emits a `ConfigureExpirationTime` event.
+Function `configureExpirationTime` - changes default expiration time of transactions. Emits a `ConfigureExpirationTime` event. Can be any amount of time bigger than the allowed minimum.
 <ul>
-    <li>Should be reverted if the caller is not a multisig itself.</li>
+    <li>Reverts if the caller is not a multisig itself.</li>
+    <li>Reverts if the passed expiration time is less than the minimum allowed</li>
 </ul>
 
 
 Function `configureCooldownTime` - changes default cooldown time of transactions. Emits a `ConfigureCooldownTime` event.
 <ul>
-    <li>Should be reverted if the caller is not a multisig itself.</li>
+    <li>Reverts if the caller is not a multisig itself.</li>
 </ul>
 
 
@@ -97,24 +98,24 @@ Function `configureCooldownTime` - changes default cooldown time of transactions
 
 `constructor` - sets the owners of the multisig, number of required approvals and the expiration time (365 days by default).
 <ul>
-    <li>Should be reverted if the array of owners is empty.</li>
-    <li>Should be reverted if one of the owners is zero address.</li>
-    <li>Should be reverted if the owner address is duplicated.</li>
-    <li>Should be reverted if the number of required approvals is bigger than the amount of owners.</li>
-    <li>Should be reverted if the number of required approvals is zero.</li>
+    <li>Reverts if the array of owners is empty.</li>
+    <li>Reverts if one of the owners is zero address.</li>
+    <li>Reverts if the owner address is duplicated.</li>
+    <li>Reverts if the number of required approvals is bigger than the amount of owners.</li>
+    <li>Reverts if the number of required approvals is zero.</li>
 </ul>
 
 ### [```MultiSigWalletUpgradeable.sol```](../contracts//MultiSigWalletUpgradeable.sol)
 
 Function `initialize` - initializes the contract with the selected parameters. Sets the owners of the multisig, number of required approvals and the expiration time (365 days by default).
 <ul>
-    <li>Should be reverted if the array of owners is empty.</li>
-    <li>Should be reverted if one of the owners is zero address.</li>
-    <li>Should be reverted if the owner address is duplicated.</li>
-    <li>Should be reverted if the number of required approvals is bigger than the amount of owners.</li>
-    <li>Should be reverted if the number of required approvals is zero.</li>
-    <li>Should be reverted if the number of required approvals is zero.</li>
-    <li>Ownership of the ProxyAdmin contract will be transferred to the wallet itself, so the upgrade will be possible only after the transaction is approved by owners.</li>
+    <li>Upgrade can be called only by multisig itself.</li>
+    <li>Reverts if the array of owners is empty.</li>
+    <li>Reverts if one of the owners is zero address.</li>
+    <li>Reverts if the owner address is duplicated.</li>
+    <li>Reverts if the number of required approvals is bigger than the amount of owners.</li>
+    <li>Reverts if the number of required approvals is zero.</li>
+    <li>Reverts if the number of required approvals is zero.</li>
 </ul>
 
 
@@ -122,9 +123,9 @@ Function `initialize` - initializes the contract with the selected parameters. S
 
 Function `deployNewWallet` - creates new non-upgradeable instance of multisig wallet. Emits a `NewWallet` event.
 <ul>
-    <li>Should be reverted if the array of owners is empty.</li>
-    <li>Should be reverted if one of the owners is zero address.</li>
-    <li>Should be reverted if the owner address is duplicated.</li>
-    <li>Should be reverted if the number of required approvals is zero.</li>
-    <li>Should be reverted if the number of required approvals is bigger than the amount of owners.</li>
+    <li>Reverts if the array of owners is empty.</li>
+    <li>Reverts if one of the owners is zero address.</li>
+    <li>Reverts if the owner address is duplicated.</li>
+    <li>Reverts if the number of required approvals is zero.</li>
+    <li>Reverts if the number of required approvals is bigger than the amount of owners.</li>
 </ul>
