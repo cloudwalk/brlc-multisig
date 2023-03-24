@@ -14,7 +14,7 @@ abstract contract MultiSigWalletBase is MultiSigWalletStorage, IMultiSigWallet {
     // --------------------------- Constants ---------------------------
 
     /// @dev The minimal transaction expiration time.
-    uint256 public constant MINIMUM_EXPIRATION_TIME = 1 days;
+    uint256 public constant MINIMUM_EXPIRATION_TIME = 60 minutes;
 
     // --------------------------- Errors ---------------------------
 
@@ -57,7 +57,7 @@ abstract contract MultiSigWalletBase is MultiSigWalletStorage, IMultiSigWallet {
     /// @dev A transaction with the specified Id is on cooldown.
     error CooldownNotEnded();
 
-    /// @dev The invalid expiration time was passed when configuring the expiration time.
+    /// @dev The invalid amount of time was passed when configuring the expiration time.
     error InvalidExpirationTime();
 
     // ------------------------- Modifiers --------------------------
