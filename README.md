@@ -10,10 +10,16 @@
 
 The purpose of multisig wallets is to increase security by requiring multiple parties to agree on transactions before execution. Transactions can be executed only when confirmed by a predefined number of owners.
 
-## Documentatin
+## Documentation
 
-Functional requierements are described in the [documentation](docs/documentation.md).
+Functional requirements are described in the [documentation](docs/documentation.md).
 Technical requirements are described in the NatSpec comments in the code.
+
+## Security audit
+Smart contracts are [audited](https://github.com/mixbytes/audits_public) by [MixBytes](https://mixbytes.io):
+- [MD Report](https://github.com/mixbytes/audits_public/blob/master/CloudWalk/README.md)
+- [PDF Report](https://github.com/mixbytes/audits_public/blob/master/CloudWalk/CloudWalk%20Multisig%20Wallet%20Audit%20Report.pdf)
+- [PDF Report (local copy)](CloudWalk%20Multisig%20Wallet%20Audit%20Report.pdf)
 
 ## Build and test
 
