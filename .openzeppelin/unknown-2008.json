@@ -1,0 +1,424 @@
+{
+  "manifestVersion": "3.2",
+  "proxies": [
+    {
+      "address": "0x0d9B2195a7f39583e8257dCbE6BaC5bD7F56b73B",
+      "txHash": "0x56e4d82d27b95318bb03ffafce28ec540f47c3d5f2b809ae34846c74cd80ae98",
+      "kind": "uups"
+    }
+  ],
+  "impls": {
+    "282a2ea37b397bcd97ea4fbb2e17bfaddd0b519ececd33d48255616fd104f97a": {
+      "address": "0x9C314efB4E8e8607C6323565Ba0502ac51B62A09",
+      "txHash": "0xe3d669e2448614f19f7f5fc69685ffa19488f7314c6fb0df8f7f394369e1fa01",
+      "layout": {
+        "solcVersion": "0.8.16",
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:67"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ERC1967UpgradeUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\ERC1967\\ERC1967UpgradeUpgradeable.sol:211"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "UUPSUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\UUPSUpgradeable.sol:107"
+          },
+          {
+            "label": "_owners",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_array(t_address)dyn_storage",
+            "contract": "MultiSigWalletStorageV1",
+            "src": "contracts\\base\\MultiSigWalletStorage.sol:13"
+          },
+          {
+            "label": "_transactions",
+            "offset": 0,
+            "slot": "102",
+            "type": "t_array(t_struct(Transaction)2343_storage)dyn_storage",
+            "contract": "MultiSigWalletStorageV1",
+            "src": "contracts\\base\\MultiSigWalletStorage.sol:16"
+          },
+          {
+            "label": "_isOwner",
+            "offset": 0,
+            "slot": "103",
+            "type": "t_mapping(t_address,t_bool)",
+            "contract": "MultiSigWalletStorageV1",
+            "src": "contracts\\base\\MultiSigWalletStorage.sol:19"
+          },
+          {
+            "label": "_approvalCount",
+            "offset": 0,
+            "slot": "104",
+            "type": "t_mapping(t_uint256,t_uint256)",
+            "contract": "MultiSigWalletStorageV1",
+            "src": "contracts\\base\\MultiSigWalletStorage.sol:22"
+          },
+          {
+            "label": "_approvalStatus",
+            "offset": 0,
+            "slot": "105",
+            "type": "t_mapping(t_uint256,t_mapping(t_address,t_bool))",
+            "contract": "MultiSigWalletStorageV1",
+            "src": "contracts\\base\\MultiSigWalletStorage.sol:25"
+          },
+          {
+            "label": "_requiredApprovals",
+            "offset": 0,
+            "slot": "106",
+            "type": "t_uint16",
+            "contract": "MultiSigWalletStorageV1",
+            "src": "contracts\\base\\MultiSigWalletStorage.sol:28"
+          },
+          {
+            "label": "_expirationTime",
+            "offset": 2,
+            "slot": "106",
+            "type": "t_uint120",
+            "contract": "MultiSigWalletStorageV1",
+            "src": "contracts\\base\\MultiSigWalletStorage.sol:31"
+          },
+          {
+            "label": "_cooldownTime",
+            "offset": 17,
+            "slot": "106",
+            "type": "t_uint120",
+            "contract": "MultiSigWalletStorageV1",
+            "src": "contracts\\base\\MultiSigWalletStorage.sol:34"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_address)dyn_storage": {
+            "label": "address[]",
+            "numberOfBytes": "32"
+          },
+          "t_array(t_struct(Transaction)2343_storage)dyn_storage": {
+            "label": "struct IMultiSigWalletTypes.Transaction[]",
+            "numberOfBytes": "32"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_bytes_storage": {
+            "label": "bytes",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_mapping(t_address,t_bool))": {
+            "label": "mapping(uint256 => mapping(address => bool))",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_uint256)": {
+            "label": "mapping(uint256 => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(Transaction)2343_storage": {
+            "label": "struct IMultiSigWalletTypes.Transaction",
+            "members": [
+              {
+                "label": "to",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "executed",
+                "type": "t_bool",
+                "offset": 20,
+                "slot": "0"
+              },
+              {
+                "label": "cooldown",
+                "type": "t_uint128",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "expiration",
+                "type": "t_uint128",
+                "offset": 16,
+                "slot": "1"
+              },
+              {
+                "label": "value",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "data",
+                "type": "t_bytes_storage",
+                "offset": 0,
+                "slot": "3"
+              }
+            ],
+            "numberOfBytes": "128"
+          },
+          "t_uint120": {
+            "label": "uint120",
+            "numberOfBytes": "15"
+          },
+          "t_uint128": {
+            "label": "uint128",
+            "numberOfBytes": "16"
+          },
+          "t_uint16": {
+            "label": "uint16",
+            "numberOfBytes": "2"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        }
+      }
+    },
+    "0171074a7af5e615e477e39a32d11cb87ad23f4b7e410c65e43cc8153c10cb2f": {
+      "address": "0x7412C701c4D2697e173FFBe6Df74E5A1A083ABA1",
+      "txHash": "0x0d7843b85af71136efe4140b6ab3bb4a400cbd7bd232e80bbb7afe207318b423",
+      "layout": {
+        "solcVersion": "0.8.16",
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:67"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ERC1967UpgradeUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\ERC1967\\ERC1967UpgradeUpgradeable.sol:211"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "UUPSUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\UUPSUpgradeable.sol:107"
+          },
+          {
+            "label": "_owners",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_array(t_address)dyn_storage",
+            "contract": "MultiSigWalletStorageV1",
+            "src": "contracts\\base\\MultiSigWalletStorage.sol:13"
+          },
+          {
+            "label": "_transactions",
+            "offset": 0,
+            "slot": "102",
+            "type": "t_array(t_struct(Transaction)2343_storage)dyn_storage",
+            "contract": "MultiSigWalletStorageV1",
+            "src": "contracts\\base\\MultiSigWalletStorage.sol:16"
+          },
+          {
+            "label": "_isOwner",
+            "offset": 0,
+            "slot": "103",
+            "type": "t_mapping(t_address,t_bool)",
+            "contract": "MultiSigWalletStorageV1",
+            "src": "contracts\\base\\MultiSigWalletStorage.sol:19"
+          },
+          {
+            "label": "_approvalCount",
+            "offset": 0,
+            "slot": "104",
+            "type": "t_mapping(t_uint256,t_uint256)",
+            "contract": "MultiSigWalletStorageV1",
+            "src": "contracts\\base\\MultiSigWalletStorage.sol:22"
+          },
+          {
+            "label": "_approvalStatus",
+            "offset": 0,
+            "slot": "105",
+            "type": "t_mapping(t_uint256,t_mapping(t_address,t_bool))",
+            "contract": "MultiSigWalletStorageV1",
+            "src": "contracts\\base\\MultiSigWalletStorage.sol:25"
+          },
+          {
+            "label": "_requiredApprovals",
+            "offset": 0,
+            "slot": "106",
+            "type": "t_uint16",
+            "contract": "MultiSigWalletStorageV1",
+            "src": "contracts\\base\\MultiSigWalletStorage.sol:28"
+          },
+          {
+            "label": "_expirationTime",
+            "offset": 2,
+            "slot": "106",
+            "type": "t_uint120",
+            "contract": "MultiSigWalletStorageV1",
+            "src": "contracts\\base\\MultiSigWalletStorage.sol:31"
+          },
+          {
+            "label": "_cooldownTime",
+            "offset": 17,
+            "slot": "106",
+            "type": "t_uint120",
+            "contract": "MultiSigWalletStorageV1",
+            "src": "contracts\\base\\MultiSigWalletStorage.sol:34"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_address)dyn_storage": {
+            "label": "address[]",
+            "numberOfBytes": "32"
+          },
+          "t_array(t_struct(Transaction)2343_storage)dyn_storage": {
+            "label": "struct IMultiSigWalletTypes.Transaction[]",
+            "numberOfBytes": "32"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_bytes_storage": {
+            "label": "bytes",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_mapping(t_address,t_bool))": {
+            "label": "mapping(uint256 => mapping(address => bool))",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_uint256)": {
+            "label": "mapping(uint256 => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(Transaction)2343_storage": {
+            "label": "struct IMultiSigWalletTypes.Transaction",
+            "members": [
+              {
+                "label": "to",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "executed",
+                "type": "t_bool",
+                "offset": 20,
+                "slot": "0"
+              },
+              {
+                "label": "cooldown",
+                "type": "t_uint128",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "expiration",
+                "type": "t_uint128",
+                "offset": 16,
+                "slot": "1"
+              },
+              {
+                "label": "value",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "data",
+                "type": "t_bytes_storage",
+                "offset": 0,
+                "slot": "3"
+              }
+            ],
+            "numberOfBytes": "128"
+          },
+          "t_uint120": {
+            "label": "uint120",
+            "numberOfBytes": "15"
+          },
+          "t_uint128": {
+            "label": "uint128",
+            "numberOfBytes": "16"
+          },
+          "t_uint16": {
+            "label": "uint16",
+            "numberOfBytes": "2"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        }
+      }
+    }
+  }
+}
