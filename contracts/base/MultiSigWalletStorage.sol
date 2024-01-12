@@ -41,6 +41,4 @@ abstract contract MultiSigWalletStorageV1 is IMultiSigWalletTypes {
  * e.g. MultiSigWalletStorage<versionNumber>, so at the end it would look like
  * "contract MultiSigWalletStorage is MultiSigWalletStorageV1, MultiSigWalletStorageV2".
  */
-abstract contract MultiSigWalletStorage is MultiSigWalletStorageV1 {
-
-}
+abstract contract MultiSigWalletStorage is MultiSigWalletStorageV1 {}

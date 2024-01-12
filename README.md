@@ -16,14 +16,16 @@ Functional requirements are described in the [documentation](docs/documentation.
 Technical requirements are described in the NatSpec comments in the code.
 
 ## Security audit
+
 Smart contracts are [audited](https://github.com/mixbytes/audits_public) by [MixBytes](https://mixbytes.io):
+
 - [MD Report](https://github.com/mixbytes/audits_public/blob/master/CloudWalk/README.md)
 - [PDF Report](https://github.com/mixbytes/audits_public/blob/master/CloudWalk/CloudWalk%20Multisig%20Wallet%20Audit%20Report.pdf)
 - [PDF Report (local copy)](CloudWalk%20Multisig%20Wallet%20Audit%20Report.pdf)
 
 ## Build and test
 
-``` sh
+```sh
 # Install all dependencies
 npm install
 
@@ -35,4 +37,5 @@ npx hardhat test
 ```
 
 ## Licensing
+
 This project is released under the MIT License, see [LICENSE](./LICENSE).
