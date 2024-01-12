@@ -2,7 +2,7 @@ import { ethers, network } from "hardhat";
 import { expect } from "chai";
 import { Contract, ContractFactory } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
-import { loadFixture, time } from "@nomicfoundation/hardhat-network-helpers";
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 
 async function setUpFixture(func: any) {
   if (network.name === "hardhat") {

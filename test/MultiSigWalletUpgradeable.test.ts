@@ -27,9 +27,7 @@ describe("Contract 'MultiSigWalletUpgradeable'", () => {
   let tokenFactory: ContractFactory;
   let walletUpgradeableFactory: ContractFactory;
   let walletFactory: ContractFactory;
-  let factoryContractFactory: ContractFactory;
   let proxyAdminFactory: ContractFactory;
-  let mockWalletFactory: ContractFactory;
 
   let deployer: SignerWithAddress;
   let owner1: SignerWithAddress;
