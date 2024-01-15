@@ -117,64 +117,59 @@ describe("Contract 'MultiSigWalletUpgradeable'", () => {
 
     it("Is reverted if it is called a second time", async () => {
       const { wallet } = await setUpFixture(deployWalletUpgradeable);
-      await expect(wallet.initialize(ownerAddresses, REQUIRED_APPROVALS)).to.be.revertedWith(
-        REVERT_MESSAGE_IF_CONTRACT_IS_ALREADY_INITIALIZED
-      );
+      await expect(
+        wallet.initialize(ownerAddresses, REQUIRED_APPROVALS)
+      ).to.be.revertedWith(REVERT_MESSAGE_IF_CONTRACT_IS_ALREADY_INITIALIZED);
     });
 
     it("Is reverted if the input owner array is empty", async () => {
       const uninitializedWallet = await upgrades.deployProxy(walletUpgradeableFactory, [], { initializer: false });
-      await expect(uninitializedWallet.initialize([], 0)).to.be.revertedWithCustomError(
-        walletUpgradeableFactory,
-        REVERT_ERROR_IF_EMPTY_OWNERS_ARRAY
-      );
+      await expect(
+        uninitializedWallet.initialize([], 0)
+      ).to.be.revertedWithCustomError(walletUpgradeableFactory, REVERT_ERROR_IF_EMPTY_OWNERS_ARRAY);
     });
 
     it("Is reverted if the input number of required approvals is zero", async () => {
       const uninitializedWallet = await upgrades.deployProxy(walletUpgradeableFactory, [], { initializer: false });
       const requiredApprovals = 0;
-      await expect(uninitializedWallet.initialize(ownerAddresses, requiredApprovals)).to.be.revertedWithCustomError(
-        walletUpgradeableFactory,
-        REVERT_ERROR_IF_INVALID_REQUIRED_APPROVALS
-      );
+      await expect(
+        uninitializedWallet.initialize(ownerAddresses, requiredApprovals)
+      ).to.be.revertedWithCustomError(walletUpgradeableFactory, REVERT_ERROR_IF_INVALID_REQUIRED_APPROVALS);
     });
 
     it("Is reverted if the input number of required approvals exceeds the length of the input owner array", async () => {
       const uninitializedWallet = await upgrades.deployProxy(walletUpgradeableFactory, [], { initializer: false });
       const requiredApprovals = ownerAddresses.length + 1;
-      await expect(uninitializedWallet.initialize(ownerAddresses, requiredApprovals)).to.be.revertedWithCustomError(
-        walletUpgradeableFactory,
-        REVERT_ERROR_IF_INVALID_REQUIRED_APPROVALS
-      );
+      await expect(
+        uninitializedWallet.initialize(ownerAddresses, requiredApprovals)
+      ).to.be.revertedWithCustomError(walletUpgradeableFactory, REVERT_ERROR_IF_INVALID_REQUIRED_APPROVALS);
     });
 
     it("Is reverted if one of the input owners is the zero address", async () => {
       const uninitializedWallet = await upgrades.deployProxy(walletUpgradeableFactory, [], { initializer: false });
       const ownerAddressArray = [ownerAddresses[0], ownerAddresses[1], ethers.constants.AddressZero];
       const requiredApprovals = ownerAddressArray.length - 1;
-      await expect(uninitializedWallet.initialize(ownerAddressArray, requiredApprovals)).to.be.revertedWithCustomError(
-        walletUpgradeableFactory,
-        REVERT_ERROR_IF_ZERO_OWNER_ADDRESS
-      );
+      await expect(
+        uninitializedWallet.initialize(ownerAddressArray, requiredApprovals)
+      ).to.be.revertedWithCustomError(walletUpgradeableFactory, REVERT_ERROR_IF_ZERO_OWNER_ADDRESS);
     });
 
     it("Is reverted if there is a duplicate address in the input owner array", async () => {
       const uninitializedWallet = await upgrades.deployProxy(walletUpgradeableFactory, [], { initializer: false });
       const ownerAddressArray = [ownerAddresses[0], ownerAddresses[1], ownerAddresses[0]];
       const requiredApprovals = ownerAddresses.length - 1;
-      await expect(uninitializedWallet.initialize(ownerAddressArray, requiredApprovals)).to.be.revertedWithCustomError(
-        walletUpgradeableFactory,
-        REVERT_ERROR_IF_DUPLICATE_OWNER_ADDRESS
-      );
+      await expect(
+        uninitializedWallet.initialize(ownerAddressArray, requiredApprovals)
+      ).to.be.revertedWithCustomError(walletUpgradeableFactory, REVERT_ERROR_IF_DUPLICATE_OWNER_ADDRESS);
     });
 
     it("Is reverted for the contract implementation if it is called even for the first time", async () => {
       const wallet = await walletUpgradeableFactory.deploy();
       await wallet.deployed();
 
-      await expect(wallet.initialize(ownerAddresses, REQUIRED_APPROVALS)).to.be.revertedWith(
-        REVERT_MESSAGE_IF_CONTRACT_IS_ALREADY_INITIALIZED
-      );
+      await expect(
+        wallet.initialize(ownerAddresses, REQUIRED_APPROVALS)
+      ).to.be.revertedWith(REVERT_MESSAGE_IF_CONTRACT_IS_ALREADY_INITIALIZED);
     });
   });
 
@@ -182,10 +177,9 @@ describe("Contract 'MultiSigWalletUpgradeable'", () => {
     it("Upgrade is reverted if caller is not a multisig", async () => {
       const { wallet } = await setUpFixture(deployAllContracts);
 
-      await expect(wallet.upgradeTo(wallet.address)).to.be.revertedWithCustomError(
-        wallet,
-        REVERT_ERROR_UNAUTHORIZED_CALLER
-      );
+      await expect(
+        wallet.upgradeTo(wallet.address)
+      ).to.be.revertedWithCustomError(wallet, REVERT_ERROR_UNAUTHORIZED_CALLER);
     });
   });
 });

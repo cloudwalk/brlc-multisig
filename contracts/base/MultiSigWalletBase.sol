@@ -100,7 +100,11 @@ abstract contract MultiSigWalletBase is MultiSigWalletStorage, IMultiSigWallet {
      *
      * - The caller must be a wallet owner.
      */
-    function submit(address to, uint256 value, bytes calldata data) external onlyOwner {
+    function submit(
+        address to,
+        uint256 value,
+        bytes calldata data
+    ) external onlyOwner {
         _submit(to, value, data);
     }
 
@@ -111,7 +115,11 @@ abstract contract MultiSigWalletBase is MultiSigWalletStorage, IMultiSigWallet {
      *
      * - The caller must be a wallet owner.
      */
-    function submitAndApprove(address to, uint256 value, bytes calldata data) external onlyOwner {
+    function submitAndApprove(
+        address to,
+        uint256 value,
+        bytes calldata data
+    ) external onlyOwner {
         _approve(_submit(to, value, data));
     }
 
@@ -299,7 +307,11 @@ abstract contract MultiSigWalletBase is MultiSigWalletStorage, IMultiSigWallet {
     /**
      * @dev See {MultiSigWallet-submit}.
      */
-    function _submit(address to, uint256 value, bytes calldata data) internal returns (uint256 txId) {
+    function _submit(
+        address to,
+        uint256 value,
+        bytes calldata data
+    ) internal returns (uint256 txId) {
         uint128 blockTimestamp = toUint128(block.timestamp);
 
         _transactions.push(

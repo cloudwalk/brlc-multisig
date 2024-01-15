@@ -91,7 +91,11 @@ interface IMultiSigWallet is IMultiSigWalletTypes {
      * @param value The value of the transaction in native tokens.
      * @param data The input data of the transaction.
      */
-    function submit(address to, uint256 value, bytes calldata data) external;
+    function submit(
+        address to,
+        uint256 value,
+        bytes calldata data
+    ) external;
 
     /**
      * @dev Submits and approves a new transaction.
@@ -103,7 +107,11 @@ interface IMultiSigWallet is IMultiSigWalletTypes {
      * @param value The value of the transaction in native tokens.
      * @param data The input data of the transaction.
      */
-    function submitAndApprove(address to, uint256 value, bytes calldata data) external;
+    function submitAndApprove(
+        address to,
+        uint256 value,
+        bytes calldata data
+    ) external;
 
     /**
      * @dev Approves a previously submitted transaction.
