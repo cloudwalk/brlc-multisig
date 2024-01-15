@@ -22,11 +22,12 @@ BRLC-multisig is a multi-signature wallet used to ensure the decentralization an
 
 # Functionality
 
-### [```MultiSigWalletBase.sol```](../contracts/base/MultiSigWalletBase.sol)
+### [`MultiSigWalletBase.sol`](../contracts/base/MultiSigWalletBase.sol)
 
 Function `submit` - submits new transaction and adds it to transactions array. Emits a `Submit` event. Can be called only by the owner.
 
 Function `submitAndApprove` - submits new transaction and adds it to transactions array. Emits a `Submit` event. Approves submitted transaction. Emits an`Approve` event. Can be called only by the owner.
+
 <ul>
     <li>Reverts if the selected transaction does not exist.</li>
     <li>Reverts if the selected transaction is expired.</li>
@@ -35,6 +36,7 @@ Function `submitAndApprove` - submits new transaction and adds it to transaction
 </ul>
 
 Function `approve` - approves selected transaction. Emits an `Approve` event. Can be called only by the owner.
+
 <ul>
     <li>Reverts if the selected transaction does not exist.</li>
     <li>Reverts if the selected transaction is expired.</li>
@@ -43,6 +45,7 @@ Function `approve` - approves selected transaction. Emits an `Approve` event. Ca
 </ul>
 
 Function `approveAndExecute` - approves and executes the selected transaction. Emits an `Approve` event. Executes transaction. Emits an `Execute` event. Can be called only by the owner.
+
 <ul>
     <li>Reverts if the selected transaction does not exist.</li>
     <li>Reverts if the selected transaction is expired.</li>
@@ -54,6 +57,7 @@ Function `approveAndExecute` - approves and executes the selected transaction. E
 </ul>
 
 Function `execute` - executes the selected transaction. Emits an `Execute` event. Can be called only by the owner. Allows repeating execution attempt if previous execution failed. Owners are able to choose the order of the execution of approved transactions.
+
 <ul>
     <li>Reverts if the selected transaction does not exist.</li>
     <li>Reverts if the selected transaction is expired.</li>
@@ -64,6 +68,7 @@ Function `execute` - executes the selected transaction. Emits an `Execute` event
 </ul>
 
 Function `revoke` - revokes approval from the selected transaction. Emits a `Revoke` event. Can be called only by the owner.
+
 <ul>
     <li>Reverts if the selected transaction does not exist.</li>
     <li>Reverts if the selected transaction is expired.</li>
@@ -72,6 +77,7 @@ Function `revoke` - revokes approval from the selected transaction. Emits a `Rev
 </ul>
 
 Function `configureOwners` - changes owners array and amount of required approvals. Emits a `ConfigureOwners` event. Function execution does not change the state of submitted transactions, the amount of approvals made by previous owners will stay the same.
+
 <ul>
     <li>Reverts if the caller is not a multisig itself.</li>
     <li>Reverts if the array of owners is empty.</li>
@@ -82,21 +88,22 @@ Function `configureOwners` - changes owners array and amount of required approva
 </ul>
 
 Function `configureExpirationTime` - changes default expiration time of transactions. Emits a `ConfigureExpirationTime` event. Can be any amount of time bigger than the allowed minimum.
+
 <ul>
     <li>Reverts if the caller is not a multisig itself.</li>
     <li>Reverts if the passed expiration time is less than the minimum allowed</li>
 </ul>
 
-
 Function `configureCooldownTime` - changes default cooldown time of transactions. Emits a `ConfigureCooldownTime` event.
+
 <ul>
     <li>Reverts if the caller is not a multisig itself.</li>
 </ul>
 
-
-### [```MultiSigWallet.sol```](../contracts//MultiSigWallet.sol)
+### [`MultiSigWallet.sol`](../contracts//MultiSigWallet.sol)
 
 `constructor` - sets the owners of the multisig, number of required approvals and the expiration time (365 days by default).
+
 <ul>
     <li>Reverts if the array of owners is empty.</li>
     <li>Reverts if one of the owners is zero address.</li>
@@ -105,9 +112,10 @@ Function `configureCooldownTime` - changes default cooldown time of transactions
     <li>Reverts if the number of required approvals is zero.</li>
 </ul>
 
-### [```MultiSigWalletUpgradeable.sol```](../contracts//MultiSigWalletUpgradeable.sol)
+### [`MultiSigWalletUpgradeable.sol`](../contracts//MultiSigWalletUpgradeable.sol)
 
 Function `initialize` - initializes the contract with the selected parameters. Sets the owners of the multisig, number of required approvals and the expiration time (365 days by default).
+
 <ul>
     <li>Upgrade can be called only by multisig itself.</li>
     <li>Reverts if the array of owners is empty.</li>
@@ -118,10 +126,10 @@ Function `initialize` - initializes the contract with the selected parameters. S
     <li>Reverts if the number of required approvals is zero.</li>
 </ul>
 
-
-### [```MultiSigWalletFactory.sol```](../contracts//MultiSigWalletFactory.sol)
+### [`MultiSigWalletFactory.sol`](../contracts//MultiSigWalletFactory.sol)
 
 Function `deployNewWallet` - creates new non-upgradeable instance of multisig wallet. Emits a `NewWallet` event.
+
 <ul>
     <li>Reverts if the array of owners is empty.</li>
     <li>Reverts if one of the owners is zero address.</li>
