@@ -3,6 +3,7 @@ import { expect } from "chai";
 import { Contract, ContractFactory } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
+import { proveTx } from "../test-utils/eth";
 
 async function setUpFixture<T>(func: () => Promise<T>): Promise<T> {
   if (network.name === "hardhat") {
@@ -86,13 +87,14 @@ describe("Contract 'MultiSigWalletUpgradeable'", () => {
     };
   }
 
-  // async function encodeUpgradeFunctionData(newImplementation: string) {
-  //   const { wallet } = await deployWalletUpgradeable();
-  //   let ABI = ["function upgradeTo(address newImplementation)"];
-  //   const upgradeInterface = new ethers.utils.Interface(ABI);
-  //   const upgradeData = await upgradeInterface.encodeFunctionData("upgradeTo", [newImplementation]);
-  //   return upgradeData;
-  // }
+  function encodeUpgradeFunctionData(newImplementationAddress: string) {
+    let ABI = ["function upgradeTo(address newImplementation)"];
+    const upgradeInterface = new ethers.utils.Interface(ABI);
+    return upgradeInterface.encodeFunctionData(
+      "upgradeTo",
+      [newImplementationAddress]
+    );
+  }
 
   describe("Function 'initialize()'", () => {
     it("Configures the contract as expected", async () => {
@@ -168,6 +170,26 @@ describe("Contract 'MultiSigWalletUpgradeable'", () => {
   });
 
   describe("Scenarios with contract upgrades", () => {
+    it("Upgrade is executed as expected when it is called by the wallet itself", async () => {
+      const { wallet } = await setUpFixture(deployAllContracts);
+
+      const newImplementation = await walletUpgradeableFactory.deploy([]);
+      await newImplementation.deployed();
+
+      const oldImplementationAddress: string = await upgrades.erc1967.getImplementationAddress(wallet.address);
+      expect(oldImplementationAddress).not.to.be.equal(newImplementation.address);
+
+      await proveTx(wallet.connect(owner1).submitAndApprove(
+        wallet.address, // to
+        0, // value
+        encodeUpgradeFunctionData(newImplementation.address) // data
+      ));
+      await proveTx(wallet.connect(owner2).approveAndExecute(0));
+
+      const newImplementationAddress: string = await upgrades.erc1967.getImplementationAddress(wallet.address);
+      expect(newImplementationAddress).to.be.equal(newImplementation.address);
+    });
+
     it("Upgrade is reverted if caller is not a multisig", async () => {
       const { wallet } = await setUpFixture(deployAllContracts);
 
