@@ -14,21 +14,21 @@ interface TestTx {
   executed?: boolean;
 }
 
-function checkTxEquality(actualOnChainTx: any, expectedTx: TestTx) {
+function checkTxEquality(actualOnChainTx: TestTx, expectedTx: TestTx) {
   expect(actualOnChainTx.to).to.equal(expectedTx.to, `tx[${expectedTx.id}].to is incorrect`);
   expect(actualOnChainTx.value).to.equal(expectedTx.value, `tx[${expectedTx.id}].value is incorrect`);
   expect(actualOnChainTx.data).to.equal(expectedTx.data, `tx[${expectedTx.id}].data is incorrect`);
   expect(actualOnChainTx.executed).to.equal(!!expectedTx.executed, `tx[${expectedTx.id}].executed is incorrect`);
 }
 
-function checkTxArrayEquality(actualOnChainTxs: any[], expectedTxs: TestTx[]) {
+function checkTxArrayEquality(actualOnChainTxs: TestTx[], expectedTxs: TestTx[]) {
   expect(actualOnChainTxs.length).to.eq(expectedTxs.length);
   for (let i = 0; i < expectedTxs.length; ++i) {
     checkTxEquality(actualOnChainTxs[i], expectedTxs[i]);
   }
 }
 
-async function setUpFixture(func: any) {
+async function setUpFixture<T>(func: () => Promise<T>): Promise<T> {
   if (network.name === "hardhat") {
     return loadFixture(func);
   } else {
@@ -75,9 +75,7 @@ describe("MultiSigWallet contract", () => {
   let tokenFactory: ContractFactory;
   let walletUpgradeableFactory: ContractFactory;
   let walletFactory: ContractFactory;
-  let proxyAdminFactory: ContractFactory;
 
-  let deployer: SignerWithAddress;
   let owner1: SignerWithAddress;
   let owner2: SignerWithAddress;
   let owner3: SignerWithAddress;
@@ -86,7 +84,7 @@ describe("MultiSigWallet contract", () => {
   let ownerAddresses: string[];
 
   before(async () => {
-    [deployer, owner1, owner2, owner3, user] = await ethers.getSigners();
+    [, owner1, owner2, owner3, user] = await ethers.getSigners();
     ownerAddresses = [owner1.address, owner2.address, owner3.address];
     walletUpgradeableFactory = await ethers.getContractFactory("MultiSigWalletUpgradeable");
     walletFactory = await ethers.getContractFactory("MultiSigWallet");
@@ -124,13 +122,6 @@ describe("MultiSigWallet contract", () => {
     return walletUpgradeableFactory.interface.encodeFunctionData(
       "configureExpirationTime",
       [expirationTime]
-    );
-  }
-
-  async function encodeUpgradeFunctionData(proxy: string, newImplementation: string) {
-    return proxyAdminFactory.interface.encodeFunctionData(
-      "upgrade",
-      [proxy, newImplementation]
     );
   }
 
@@ -203,7 +194,7 @@ describe("MultiSigWallet contract", () => {
       ).to.be.revertedWithCustomError(walletFactory, REVERT_ERROR_IF_INVALID_REQUIRED_APPROVALS);
     });
 
-    it("Deployment is reverted if the input number of required approvals exceeds the length of the input owner array", async () => {
+    it("Deployment is reverted if the number of required approvals exceeds the length of the owner array", async () => {
       const requiredApprovals = ownerAddresses.length + 1;
       await expect(
         walletFactory.deploy(ownerAddresses, requiredApprovals)
@@ -281,7 +272,7 @@ describe("MultiSigWallet contract", () => {
           .withArgs(wallet.interface.encodeErrorResult(REVERT_ERROR_IF_INVALID_REQUIRED_APPROVALS));
       });
 
-      it("Is reverted if the input number of required approvals exceeds the length of the input owner array", async () => {
+      it("Is reverted if the number of required approvals exceeds the length of the owner array", async () => {
         const { wallet } = await setUpFixture(deployWallet);
         const invalidApprovals = ownerAddresses.length + 1;
         const txData = encodeConfigureOwnersFunctionData(ownerAddresses, invalidApprovals);
@@ -462,7 +453,7 @@ describe("MultiSigWallet contract", () => {
       };
 
       it("Executes as expected and emits the correct event", async () => {
-        let { wallet } = await setUpFixture(deployWallet);
+        const { wallet } = await setUpFixture(deployWallet);
         await proveTx(wallet.connect(owner1).submit(tx.to, tx.value, tx.data));
         expect(await wallet.getApprovalCount(tx.id)).to.eq(0);
 
@@ -521,7 +512,7 @@ describe("MultiSigWallet contract", () => {
       };
 
       it("Executes as expected and emits the correct events", async () => {
-        let { wallet } = await setUpFixture(deployWallet);
+        const { wallet } = await setUpFixture(deployWallet);
         await proveTx(wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data));
         expect(await wallet.getApprovalStatus(tx.id, owner1.address)).to.eq(true);
 
@@ -532,7 +523,7 @@ describe("MultiSigWallet contract", () => {
 
         expect(await wallet.getApprovalStatus(tx.id, owner2.address)).to.eq(true);
         const actualTx = await wallet.getTransaction(tx.id);
-        await checkTxEquality(actualTx, tx);
+        checkTxEquality(actualTx, tx);
       });
 
       it("Is reverted if it is called not by an owner", async () => {
@@ -597,7 +588,7 @@ describe("MultiSigWallet contract", () => {
       };
 
       it("Executes as expected and emits the correct event", async () => {
-        let { wallet } = await setUpFixture(deployWallet);
+        const { wallet } = await setUpFixture(deployWallet);
         await proveTx(wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data));
         await proveTx(wallet.connect(owner2).approve(tx.id));
 
@@ -607,7 +598,7 @@ describe("MultiSigWallet contract", () => {
         tx.executed = true;
 
         const actualTx = await wallet.getTransaction(tx.id);
-        await checkTxEquality(actualTx, tx);
+        checkTxEquality(actualTx, tx);
       });
 
       it("Is reverted if it is called not by an owner", async () => {
@@ -662,7 +653,7 @@ describe("MultiSigWallet contract", () => {
       };
 
       it("Executes as expected and emits the correct event", async () => {
-        let { wallet } = await setUpFixture(deployWallet);
+        const { wallet } = await setUpFixture(deployWallet);
         await proveTx(wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data));
         expect(await wallet.getApprovalStatus(tx.id, owner1.address)).to.eq(true);
 
@@ -717,7 +708,7 @@ describe("MultiSigWallet contract", () => {
 
       it("Execute as expected in different cases", async () => {
         const { wallet } = await setUpFixture(deployWallet);
-        for (let tx of txs) {
+        for (const tx of txs) {
           await proveTx(wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data));
         }
         await proveTx(wallet.connect(owner2).approveAndExecute(txs[0].id));
@@ -725,7 +716,7 @@ describe("MultiSigWallet contract", () => {
 
         expect(await wallet.transactionCount()).to.eq(txs.length);
 
-        for (let tx of txs) {
+        for (const tx of txs) {
           const actualTx = await wallet.getTransaction(tx.id);
           checkTxEquality(actualTx, tx);
         }
@@ -738,7 +729,7 @@ describe("MultiSigWallet contract", () => {
           await expect(wallet.getTransaction(txs.length)).to.reverted;
         }
 
-        let actualTxs: any[];
+        let actualTxs: TestTx[];
 
         actualTxs = await wallet.getTransactions(0, 50);
         checkTxArrayEquality(actualTxs, txs);
