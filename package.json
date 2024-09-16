@@ -1,21 +1,21 @@
 {
   "dependencies": {
-    "@openzeppelin/contracts": "^4.9.3",
-    "@openzeppelin/contracts-upgradeable": "4.9.3"
+    "@openzeppelin/contracts": "^4.9.6",
+    "@openzeppelin/contracts-upgradeable": "4.9.6"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^2.0.2",
     "@openzeppelin/hardhat-upgrades": "^1.28.0",
-    "@typescript-eslint/eslint-plugin": "^6.17.0",
-    "@typescript-eslint/parser": "^6.17.0",
-    "eslint": "^8.56.0",
-    "eslint-config-prettier": "^9.1.0",
-    "eslint-plugin-prettier": "^5.1.2",
+    "@stylistic/eslint-plugin": "^1.8.1",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "dotenv": "^16.4.5",
+    "eslint": "^8.57.0",
     "hardhat-contract-sizer": "^2.10.0",
-    "prettier": "^3.1.1",
-    "prettier-plugin-solidity": "^1.2.0"
+    "prettier": "^3.3.3",
+    "prettier-plugin-solidity": "^1.4.1"
   },
   "scripts": {
-    "prettier": "npx prettier --write 'test/**/*.ts'; npx prettier --write --plugin=prettier-plugin-solidity 'contracts/**/*.sol'"
+    "prettier": "npx prettier --write 'scripts/**/*.ts' 'test/**/*.ts' 'test-utils/**/*.ts'; npx prettier --write --plugin=prettier-plugin-solidity 'contracts/**/*.sol'"
   }
 }
