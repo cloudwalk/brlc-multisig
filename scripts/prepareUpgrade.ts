@@ -9,9 +9,11 @@ async function main() {
   // unsafeSkipStorageCheck: true
 
   const factory = await ethers.getContractFactory(CONTRACT_NAME);
-  await upgrades.prepareUpgrade(PROXY_ADDRESS, factory);
+  const response = await upgrades.prepareUpgrade(PROXY_ADDRESS, factory);
 
-  console.log("Upgrade prepared");
+  console.log("Upgrade prepared:", response);
 }
 
-main();
+main().then().catch(err => {
+  throw err;
+});
