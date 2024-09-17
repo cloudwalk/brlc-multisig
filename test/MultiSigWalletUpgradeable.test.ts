@@ -14,7 +14,7 @@ async function setUpFixture(func: any) {
 
 describe("Contract 'MultiSigWalletUpgradeable'", () => {
   const REQUIRED_APPROVALS = 2;
-  const ONE_YEAR = 3600 * 24 * 365;
+  const TEN_DAYS = 3600 * 24 * 10;
 
   const REVERT_MESSAGE_IF_CONTRACT_IS_ALREADY_INITIALIZED = "Initializable: contract is already initialized";
 
@@ -108,7 +108,7 @@ describe("Contract 'MultiSigWalletUpgradeable'", () => {
       expect(await wallet.requiredApprovals()).to.eq(REQUIRED_APPROVALS);
       expect(await wallet.transactionCount()).to.eq(0);
       expect(await wallet.cooldownTime()).to.eq(0);
-      expect(await wallet.expirationTime()).to.eq(ONE_YEAR);
+      expect(await wallet.expirationTime()).to.eq(TEN_DAYS);
       await checkOwnership(wallet, {
         ownerAddresses,
         expectedOwnershipStatus: true
