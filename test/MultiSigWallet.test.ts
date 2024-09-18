@@ -1,7 +1,6 @@
 import { ethers, network, upgrades } from "hardhat";
 import { expect } from "chai";
 import { Contract, ContractFactory } from "ethers";
-import { TransactionResponse } from "@ethersproject/abstract-provider";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import { loadFixture, time } from "@nomicfoundation/hardhat-network-helpers";
 import { proveTx } from "../test-utils/eth";
@@ -365,7 +364,7 @@ describe("MultiSigWallet contract", () => {
         async function checkExecutionOfReceive(params: { value: number }) {
           const { wallet } = await setUpFixture(deployWallet);
 
-          const txResponse = await user.sendTransaction({
+          const txResponse = user.sendTransaction({
             to: wallet.address,
             value: params.value
           });
@@ -427,7 +426,7 @@ describe("MultiSigWallet contract", () => {
 
       it("Executes as expected and emits the correct events", async () => {
         const { wallet } = await setUpFixture(deployWallet);
-        const txResponse: TransactionResponse = wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data);
+        const txResponse = wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data);
 
         await expect(txResponse).to.emit(wallet, EVENT_NAME_SUBMIT).withArgs(owner1.address, tx.id);
         await expect(txResponse).to.emit(wallet, EVENT_NAME_APPROVE).withArgs(owner1.address, tx.id);
@@ -605,7 +604,7 @@ describe("MultiSigWallet contract", () => {
         await proveTx(wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data));
         expect(await wallet.getApprovalStatus(tx.id, owner1.address)).to.eq(true);
 
-        const txResponse: TransactionResponse = await wallet.connect(owner2).approveAndExecute(tx.id);
+        const txResponse = wallet.connect(owner2).approveAndExecute(tx.id);
         await expect(txResponse).to.emit(wallet, EVENT_NAME_APPROVE).withArgs(owner2.address, tx.id);
         await expect(txResponse).to.emit(wallet, EVENT_NAME_EXECUTE).withArgs(owner2.address, tx.id);
         tx.executed = true;
@@ -691,7 +690,7 @@ describe("MultiSigWallet contract", () => {
           await proveTx(wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data));
         }
 
-        const txResponse: TransactionResponse = await wallet.connect(owner2).approveAndExecuteBatch(txIds);
+        const txResponse = wallet.connect(owner2).approveAndExecuteBatch(txIds);
         for (const tx of txs) {
           await expect(txResponse).to.emit(wallet, EVENT_NAME_APPROVE).withArgs(owner2.address, tx.id);
           await expect(txResponse).to.emit(wallet, EVENT_NAME_EXECUTE).withArgs(owner2.address, tx.id);
@@ -883,7 +882,7 @@ describe("MultiSigWallet contract", () => {
       it("Is reverted if a transaction from the batch does not exist", async () => {
         const { wallet } = await setUpFixture(deployWallet);
         for (const tx of txs.slice(0, -1)) {
-          wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data);
+          await proveTx(wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data));
         }
         await proveTx(wallet.connect(owner2).approveBatch(txIds.slice(0, -1)));
 
@@ -895,7 +894,7 @@ describe("MultiSigWallet contract", () => {
       it("Is reverted if a transaction from the batch is already executed", async () => {
         const { wallet } = await setUpFixture(deployWallet);
         for (const tx of txs) {
-          wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data);
+          await proveTx(wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data));
         }
         await proveTx(wallet.connect(owner2).approveBatch(txIds));
 
@@ -1270,7 +1269,7 @@ describe("MultiSigWallet contract", () => {
             })
           );
 
-          const txResponse: TransactionResponse = await wallet.connect(owner2).approveAndExecute(tx.id);
+          const txResponse = wallet.connect(owner2).approveAndExecute(tx.id);
           await expect(txResponse)
             .to.emit(wallet, EVENT_NAME_EXECUTE)
             .withArgs(owner2.address, tx.id);
