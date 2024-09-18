@@ -43,10 +43,10 @@ describe("MultiSigWallet contract", () => {
   const ONE_DAY = 3600 * 24;
   const ONE_YEAR = 3600 * 24 * 365;
 
-  const ADDRESS_STUB = "0x0000000000000000000000000000000000000001";
+  const ADDRESS_STUB1 = "0x0000000000000000000000000000000000000001";
   const ADDRESS_STUB2 = "0x0000000000000000000000000000000000000002";
   const TX_VALUE_STUB = 123;
-  const TX_DATA_STUB = ethers.utils.hexlify(ethers.utils.toUtf8Bytes("Some data"));
+  const TX_DATA_STUB1 = ethers.utils.hexlify(ethers.utils.toUtf8Bytes("Some data"));
   const TX_DATA_STUB2 = ethers.utils.hexlify(ethers.utils.toUtf8Bytes("Some data 2"));
   const DEFAULT_ERROR_DATA = "0x";
 
@@ -392,9 +392,9 @@ describe("MultiSigWallet contract", () => {
     describe("Function 'submit()'", () => {
       const tx: TestTx = {
         id: 0,
-        to: ADDRESS_STUB,
+        to: ADDRESS_STUB1,
         value: TX_VALUE_STUB,
-        data: TX_DATA_STUB
+        data: TX_DATA_STUB1
       };
 
       it("Executes as expected and emits the correct event", async () => {
@@ -420,9 +420,9 @@ describe("MultiSigWallet contract", () => {
     describe("Function 'submitAndApprove()'", () => {
       const tx: TestTx = {
         id: 0,
-        to: ADDRESS_STUB,
+        to: ADDRESS_STUB1,
         value: TX_VALUE_STUB,
-        data: TX_DATA_STUB
+        data: TX_DATA_STUB1
       };
 
       it("Executes as expected and emits the correct events", async () => {
@@ -449,9 +449,9 @@ describe("MultiSigWallet contract", () => {
     describe("Function 'approve()'", () => {
       const tx: TestTx = {
         id: 0,
-        to: ADDRESS_STUB,
+        to: ADDRESS_STUB1,
         value: 0,
-        data: TX_DATA_STUB
+        data: TX_DATA_STUB1
       };
 
       it("Executes as expected and emits the correct event", async () => {
@@ -509,9 +509,9 @@ describe("MultiSigWallet contract", () => {
       const txs: TestTx[] = [
         {
           id: 0,
-          to: ADDRESS_STUB,
+          to: ADDRESS_STUB1,
           value: 0,
-          data: TX_DATA_STUB
+          data: TX_DATA_STUB1
         },
         {
           id: 1,
@@ -557,9 +557,11 @@ describe("MultiSigWallet contract", () => {
 
       it("Is reverted if a transaction from the batch does not exist", async () => {
         const { wallet } = await setUpFixture(deployWallet);
-        await proveTx(wallet.connect(owner1).submit(txs[0].to, txs[0].value, txs[0].data));
+        for (const tx of txs.slice(0, -1)) {
+          await proveTx(wallet.connect(owner1).submit(tx.to, tx.value, tx.data));
+        }
         await expect(
-          wallet.connect(owner1).approve(txIds)
+          wallet.connect(owner1).approveBatch(txIds)
         ).to.revertedWithCustomError(wallet, REVERT_ERROR_IF_TRANSACTION_DOES_NOT_EXIST);
       });
 
@@ -593,9 +595,9 @@ describe("MultiSigWallet contract", () => {
     describe("Function 'approveAndExecute()'", () => {
       const tx: TestTx = {
         id: 0,
-        to: ADDRESS_STUB,
+        to: ADDRESS_STUB1,
         value: 0,
-        data: TX_DATA_STUB
+        data: TX_DATA_STUB1
       };
 
       it("Executes as expected and emits the correct events", async () => {
@@ -670,9 +672,9 @@ describe("MultiSigWallet contract", () => {
       const txs: TestTx[] = [
         {
           id: 0,
-          to: ADDRESS_STUB,
+          to: ADDRESS_STUB1,
           value: 0,
-          data: TX_DATA_STUB
+          data: TX_DATA_STUB1
         },
         {
           id: 1,
@@ -709,8 +711,10 @@ describe("MultiSigWallet contract", () => {
 
       it("Is reverted if a transaction from the batch does not exist", async () => {
         const { wallet } = await setUpFixture(deployWallet);
-        await proveTx(wallet.connect(owner1).submit(txs[0].to, txs[0].value, txs[0].data));
-        await proveTx(wallet.connect(owner1).approve(txs[0].id));
+        for (const tx of txs.slice(0, -1)) {
+          await proveTx(wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data));
+        }
+
         await expect(
           wallet.connect(owner2).approveAndExecuteBatch(txIds)
         ).to.revertedWithCustomError(wallet, REVERT_ERROR_IF_TRANSACTION_DOES_NOT_EXIST);
@@ -721,9 +725,11 @@ describe("MultiSigWallet contract", () => {
         for (const tx of txs) {
           await proveTx(wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data));
         }
+        const lastTx: TestTx = txs[txs.length - 1];
+        await proveTx(wallet.connect(owner2).approve(lastTx.id));
 
         await expect(
-          wallet.connect(owner1).approveAndExecuteBatch(txIds)
+          wallet.connect(owner2).approveAndExecuteBatch(txIds)
         ).to.revertedWithCustomError(wallet, REVERT_ERROR_IF_TRANSACTION_IS_ALREADY_APPROVED);
       });
 
@@ -745,9 +751,10 @@ describe("MultiSigWallet contract", () => {
         for (const tx of txs) {
           await proveTx(wallet.connect(owner1).submit(tx.to, tx.value, tx.data));
         }
+        await proveTx(wallet.connect(owner1).approveBatch(txIds.slice(0, -1)));
 
         await expect(
-          wallet.connect(owner1).approveAndExecuteBatch(txIds)
+          wallet.connect(owner2).approveAndExecuteBatch(txIds)
         ).to.revertedWithCustomError(wallet, REVERT_ERROR_IF_TRANSACTION_HAS_NOT_ENOUGH_APPROVALS);
       });
 
@@ -768,9 +775,9 @@ describe("MultiSigWallet contract", () => {
     describe("Function 'execute()'", () => {
       const tx: TestTx = {
         id: 0,
-        to: ADDRESS_STUB,
+        to: ADDRESS_STUB1,
         value: 0,
-        data: TX_DATA_STUB
+        data: TX_DATA_STUB1
       };
 
       it("Executes as expected and emits the correct event", async () => {
@@ -834,9 +841,9 @@ describe("MultiSigWallet contract", () => {
       const txs: TestTx[] = [
         {
           id: 0,
-          to: ADDRESS_STUB,
+          to: ADDRESS_STUB1,
           value: 0,
-          data: TX_DATA_STUB
+          data: TX_DATA_STUB1
         },
         {
           id: 1,
@@ -887,12 +894,13 @@ describe("MultiSigWallet contract", () => {
 
       it("Is reverted if a transaction from the batch is already executed", async () => {
         const { wallet } = await setUpFixture(deployWallet);
-        const lastTx = txs[txs.length - 1];
         for (const tx of txs) {
           wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data);
         }
         await proveTx(wallet.connect(owner2).approveBatch(txIds));
-        await proveTx(wallet.connect(owner3).execute(lastTx.id));
+
+        const lastTx = txs[txs.length - 1];
+        await proveTx(wallet.connect(owner2).execute(lastTx.id));
 
         await expect(
           wallet.connect(owner3).executeBatch(txIds)
@@ -929,9 +937,9 @@ describe("MultiSigWallet contract", () => {
     describe("Function 'revoke()'", () => {
       const tx: TestTx = {
         id: 0,
-        to: ADDRESS_STUB,
+        to: ADDRESS_STUB1,
         value: 0,
-        data: TX_DATA_STUB
+        data: TX_DATA_STUB1
       };
 
       it("Executes as expected and emits the correct event", async () => {
@@ -982,9 +990,9 @@ describe("MultiSigWallet contract", () => {
       const txs: TestTx[] = [
         {
           id: 0,
-          to: ADDRESS_STUB,
+          to: ADDRESS_STUB1,
           value: 0,
-          data: TX_DATA_STUB
+          data: TX_DATA_STUB1
         },
         {
           id: 1,
@@ -1032,10 +1040,11 @@ describe("MultiSigWallet contract", () => {
 
       it("Is reverted if a transaction from the batch is already executed", async () => {
         const { wallet } = await setUpFixture(deployWallet);
-        const lastTx = txs[txs.length - 1];
         for (const tx of txs) {
           await proveTx(wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data));
         }
+
+        const lastTx = txs[txs.length - 1];
         await proveTx(wallet.connect(owner2).approveAndExecute(lastTx.id));
 
         await expect(
@@ -1120,9 +1129,9 @@ describe("MultiSigWallet contract", () => {
     describe("Scenarios with cooldown and expiration", () => {
       const tx: TestTx = {
         id: 0,
-        to: ADDRESS_STUB,
+        to: ADDRESS_STUB1,
         value: 0,
-        data: TX_DATA_STUB
+        data: TX_DATA_STUB1
       };
 
       async function wait(timeoutInSeconds: number) {
