@@ -61,7 +61,7 @@ contract MultiSigWalletUpgradeable is Initializable, UUPSUpgradeable, MultiSigWa
         onlyInitializing
     {
         __UUPSUpgradeable_init_unchained();
-        _configureExpirationTime(365 days);
+        _configureExpirationTime(10 days);
         _configureOwners(newOwners, newRequiredApprovals);
     }
 
