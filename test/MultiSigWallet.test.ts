@@ -1,7 +1,6 @@
 import { ethers, network, upgrades } from "hardhat";
 import { expect } from "chai";
 import { Contract, ContractFactory } from "ethers";
-import { TransactionResponse } from "@ethersproject/abstract-provider";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import { loadFixture, time } from "@nomicfoundation/hardhat-network-helpers";
 import { proveTx } from "../test-utils/eth";
@@ -14,21 +13,21 @@ interface TestTx {
   executed?: boolean;
 }
 
-function checkTxEquality(actualOnChainTx: any, expectedTx: TestTx) {
+function checkTxEquality(actualOnChainTx: TestTx, expectedTx: TestTx) {
   expect(actualOnChainTx.to).to.equal(expectedTx.to, `tx[${expectedTx.id}].to is incorrect`);
   expect(actualOnChainTx.value).to.equal(expectedTx.value, `tx[${expectedTx.id}].value is incorrect`);
   expect(actualOnChainTx.data).to.equal(expectedTx.data, `tx[${expectedTx.id}].data is incorrect`);
   expect(actualOnChainTx.executed).to.equal(!!expectedTx.executed, `tx[${expectedTx.id}].executed is incorrect`);
 }
 
-function checkTxArrayEquality(actualOnChainTxs: any[], expectedTxs: TestTx[]) {
+function checkTxArrayEquality(actualOnChainTxs: TestTx[], expectedTxs: TestTx[]) {
   expect(actualOnChainTxs.length).to.eq(expectedTxs.length);
   for (let i = 0; i < expectedTxs.length; ++i) {
     checkTxEquality(actualOnChainTxs[i], expectedTxs[i]);
   }
 }
 
-async function setUpFixture(func: any) {
+async function setUpFixture<T>(func: () => Promise<T>): Promise<T> {
   if (network.name === "hardhat") {
     return loadFixture(func);
   } else {
@@ -43,9 +42,11 @@ describe("MultiSigWallet contract", () => {
   const ONE_DAY = 3600 * 24;
   const ONE_YEAR = 3600 * 24 * 365;
 
-  const ADDRESS_STUB = "0x0000000000000000000000000000000000000001";
+  const ADDRESS_STUB1 = "0x0000000000000000000000000000000000000001";
+  const ADDRESS_STUB2 = "0x0000000000000000000000000000000000000002";
   const TX_VALUE_STUB = 123;
-  const TX_DATA_STUB = ethers.utils.hexlify(ethers.utils.toUtf8Bytes("Some data"));
+  const TX_DATA_STUB1 = ethers.utils.hexlify(ethers.utils.toUtf8Bytes("Some data"));
+  const TX_DATA_STUB2 = ethers.utils.hexlify(ethers.utils.toUtf8Bytes("Some data 2"));
   const DEFAULT_ERROR_DATA = "0x";
 
   const EVENT_NAME_APPROVE = "Approve";
@@ -75,9 +76,7 @@ describe("MultiSigWallet contract", () => {
   let tokenFactory: ContractFactory;
   let walletUpgradeableFactory: ContractFactory;
   let walletFactory: ContractFactory;
-  let proxyAdminFactory: ContractFactory;
 
-  let deployer: SignerWithAddress;
   let owner1: SignerWithAddress;
   let owner2: SignerWithAddress;
   let owner3: SignerWithAddress;
@@ -86,7 +85,7 @@ describe("MultiSigWallet contract", () => {
   let ownerAddresses: string[];
 
   before(async () => {
-    [deployer, owner1, owner2, owner3, user] = await ethers.getSigners();
+    [, owner1, owner2, owner3, user] = await ethers.getSigners();
     ownerAddresses = [owner1.address, owner2.address, owner3.address];
     walletUpgradeableFactory = await ethers.getContractFactory("MultiSigWalletUpgradeable");
     walletFactory = await ethers.getContractFactory("MultiSigWallet");
@@ -124,13 +123,6 @@ describe("MultiSigWallet contract", () => {
     return walletUpgradeableFactory.interface.encodeFunctionData(
       "configureExpirationTime",
       [expirationTime]
-    );
-  }
-
-  async function encodeUpgradeFunctionData(proxy: string, newImplementation: string) {
-    return proxyAdminFactory.interface.encodeFunctionData(
-      "upgrade",
-      [proxy, newImplementation]
     );
   }
 
@@ -203,7 +195,7 @@ describe("MultiSigWallet contract", () => {
       ).to.be.revertedWithCustomError(walletFactory, REVERT_ERROR_IF_INVALID_REQUIRED_APPROVALS);
     });
 
-    it("Deployment is reverted if the input number of required approvals exceeds the length of the input owner array", async () => {
+    it("Deployment is reverted if the number of required approvals exceeds the length of the owner array", async () => {
       const requiredApprovals = ownerAddresses.length + 1;
       await expect(
         walletFactory.deploy(ownerAddresses, requiredApprovals)
@@ -281,7 +273,7 @@ describe("MultiSigWallet contract", () => {
           .withArgs(wallet.interface.encodeErrorResult(REVERT_ERROR_IF_INVALID_REQUIRED_APPROVALS));
       });
 
-      it("Is reverted if the input number of required approvals exceeds the length of the input owner array", async () => {
+      it("Is reverted if the number of required approvals exceeds the length of the owner array", async () => {
         const { wallet } = await setUpFixture(deployWallet);
         const invalidApprovals = ownerAddresses.length + 1;
         const txData = encodeConfigureOwnersFunctionData(ownerAddresses, invalidApprovals);
@@ -372,7 +364,7 @@ describe("MultiSigWallet contract", () => {
         async function checkExecutionOfReceive(params: { value: number }) {
           const { wallet } = await setUpFixture(deployWallet);
 
-          const txResponse = await user.sendTransaction({
+          const txResponse = user.sendTransaction({
             to: wallet.address,
             value: params.value
           });
@@ -399,9 +391,9 @@ describe("MultiSigWallet contract", () => {
     describe("Function 'submit()'", () => {
       const tx: TestTx = {
         id: 0,
-        to: ADDRESS_STUB,
+        to: ADDRESS_STUB1,
         value: TX_VALUE_STUB,
-        data: TX_DATA_STUB
+        data: TX_DATA_STUB1
       };
 
       it("Executes as expected and emits the correct event", async () => {
@@ -427,14 +419,14 @@ describe("MultiSigWallet contract", () => {
     describe("Function 'submitAndApprove()'", () => {
       const tx: TestTx = {
         id: 0,
-        to: ADDRESS_STUB,
+        to: ADDRESS_STUB1,
         value: TX_VALUE_STUB,
-        data: TX_DATA_STUB
+        data: TX_DATA_STUB1
       };
 
       it("Executes as expected and emits the correct events", async () => {
         const { wallet } = await setUpFixture(deployWallet);
-        const txResponse: TransactionResponse = wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data);
+        const txResponse = wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data);
 
         await expect(txResponse).to.emit(wallet, EVENT_NAME_SUBMIT).withArgs(owner1.address, tx.id);
         await expect(txResponse).to.emit(wallet, EVENT_NAME_APPROVE).withArgs(owner1.address, tx.id);
@@ -456,13 +448,13 @@ describe("MultiSigWallet contract", () => {
     describe("Function 'approve()'", () => {
       const tx: TestTx = {
         id: 0,
-        to: ADDRESS_STUB,
+        to: ADDRESS_STUB1,
         value: 0,
-        data: TX_DATA_STUB
+        data: TX_DATA_STUB1
       };
 
       it("Executes as expected and emits the correct event", async () => {
-        let { wallet } = await setUpFixture(deployWallet);
+        const { wallet } = await setUpFixture(deployWallet);
         await proveTx(wallet.connect(owner1).submit(tx.to, tx.value, tx.data));
         expect(await wallet.getApprovalCount(tx.id)).to.eq(0);
 
@@ -512,27 +504,114 @@ describe("MultiSigWallet contract", () => {
       });
     });
 
+    describe("Function 'approveBatch()'", () => {
+      const txs: TestTx[] = [
+        {
+          id: 0,
+          to: ADDRESS_STUB1,
+          value: 0,
+          data: TX_DATA_STUB1
+        },
+        {
+          id: 1,
+          to: ADDRESS_STUB2,
+          value: 0,
+          data: TX_DATA_STUB2
+        }
+      ];
+      const txIds: number[] = txs.map(tx => tx.id);
+
+      it("Executes as expected and emits the correct events", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        for (const tx of txs) {
+          await proveTx(wallet.connect(owner1).submit(tx.to, tx.value, tx.data));
+          expect(await wallet.getApprovalCount(tx.id)).to.eq(0);
+        }
+
+        const txResponse1 = wallet.connect(owner1).approveBatch(txIds);
+        for (const tx of txs) {
+          await expect(txResponse1)
+            .to.emit(wallet, EVENT_NAME_APPROVE)
+            .withArgs(owner1.address, tx.id);
+          expect(await wallet.getApprovalStatus(tx.id, owner1.address)).to.eq(true);
+          expect(await wallet.getApprovalCount(tx.id)).to.eq(1);
+        }
+
+        const txResponse2 = wallet.connect(owner2).approveBatch(txIds);
+        for (const tx of txs) {
+          await expect(txResponse2)
+            .to.emit(wallet, EVENT_NAME_APPROVE)
+            .withArgs(owner2.address, tx.id);
+          expect(await wallet.getApprovalStatus(tx.id, owner2.address)).to.eq(true);
+          expect(await wallet.getApprovalCount(tx.id)).to.eq(2);
+        }
+      });
+
+      it("Is reverted if it is called not by an owner", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        await expect(
+          wallet.approveBatch(txIds)
+        ).to.revertedWithCustomError(wallet, REVERT_ERROR_IF_UNAUTHORIZED_CALLER);
+      });
+
+      it("Is reverted if a transaction from the batch does not exist", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        for (const tx of txs.slice(0, -1)) {
+          await proveTx(wallet.connect(owner1).submit(tx.to, tx.value, tx.data));
+        }
+        await expect(
+          wallet.connect(owner1).approveBatch(txIds)
+        ).to.revertedWithCustomError(wallet, REVERT_ERROR_IF_TRANSACTION_DOES_NOT_EXIST);
+      });
+
+      it("Is reverted if a transaction from the batch is already executed", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        for (const tx of txs) {
+          await proveTx(wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data));
+        }
+        const lastTx: TestTx = txs[txs.length - 1];
+        await proveTx(wallet.connect(owner2).approveAndExecute(lastTx.id));
+
+        await expect(
+          wallet.connect(owner3).approveBatch(txIds)
+        ).to.revertedWithCustomError(wallet, REVERT_ERROR_IF_TRANSACTION_IS_ALREADY_EXECUTED);
+      });
+
+      it("Is reverted if the transaction is already approved by the same owner", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        for (const tx of txs) {
+          await proveTx(wallet.connect(owner1).submit(tx.to, tx.value, tx.data));
+        }
+        const lastTx: TestTx = txs[txs.length - 1];
+        await proveTx(wallet.connect(owner1).approve(lastTx.id));
+
+        await expect(
+          wallet.connect(owner1).approveBatch(txIds)
+        ).to.revertedWithCustomError(wallet, REVERT_ERROR_IF_TRANSACTION_IS_ALREADY_APPROVED);
+      });
+    });
+
     describe("Function 'approveAndExecute()'", () => {
       const tx: TestTx = {
         id: 0,
-        to: ADDRESS_STUB,
+        to: ADDRESS_STUB1,
         value: 0,
-        data: TX_DATA_STUB
+        data: TX_DATA_STUB1
       };
 
       it("Executes as expected and emits the correct events", async () => {
-        let { wallet } = await setUpFixture(deployWallet);
+        const { wallet } = await setUpFixture(deployWallet);
         await proveTx(wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data));
         expect(await wallet.getApprovalStatus(tx.id, owner1.address)).to.eq(true);
 
-        const txResponse: TransactionResponse = await wallet.connect(owner2).approveAndExecute(tx.id);
+        const txResponse = wallet.connect(owner2).approveAndExecute(tx.id);
         await expect(txResponse).to.emit(wallet, EVENT_NAME_APPROVE).withArgs(owner2.address, tx.id);
         await expect(txResponse).to.emit(wallet, EVENT_NAME_EXECUTE).withArgs(owner2.address, tx.id);
         tx.executed = true;
 
         expect(await wallet.getApprovalStatus(tx.id, owner2.address)).to.eq(true);
         const actualTx = await wallet.getTransaction(tx.id);
-        await checkTxEquality(actualTx, tx);
+        checkTxEquality(actualTx, tx);
       });
 
       it("Is reverted if it is called not by an owner", async () => {
@@ -588,16 +667,120 @@ describe("MultiSigWallet contract", () => {
       });
     });
 
+    describe("Function 'approveAndExecuteBatch()'", () => {
+      const txs: TestTx[] = [
+        {
+          id: 0,
+          to: ADDRESS_STUB1,
+          value: 0,
+          data: TX_DATA_STUB1
+        },
+        {
+          id: 1,
+          to: ADDRESS_STUB2,
+          value: 0,
+          data: TX_DATA_STUB2
+        }
+      ];
+      const txIds: number[] = txs.map(tx => tx.id);
+
+      it("Executes as expected and emits the correct events", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        for (const tx of txs) {
+          await proveTx(wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data));
+        }
+
+        const txResponse = wallet.connect(owner2).approveAndExecuteBatch(txIds);
+        for (const tx of txs) {
+          await expect(txResponse).to.emit(wallet, EVENT_NAME_APPROVE).withArgs(owner2.address, tx.id);
+          await expect(txResponse).to.emit(wallet, EVENT_NAME_EXECUTE).withArgs(owner2.address, tx.id);
+          tx.executed = true;
+          expect(await wallet.getApprovalStatus(tx.id, owner2.address)).to.eq(true);
+          const actualTx = await wallet.getTransaction(tx.id);
+          checkTxEquality(actualTx, tx);
+        }
+      });
+
+      it("Is reverted if it is called not by an owner", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        await expect(
+          wallet.approveAndExecuteBatch(txIds)
+        ).to.revertedWithCustomError(wallet, REVERT_ERROR_IF_UNAUTHORIZED_CALLER);
+      });
+
+      it("Is reverted if a transaction from the batch does not exist", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        for (const tx of txs.slice(0, -1)) {
+          await proveTx(wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data));
+        }
+
+        await expect(
+          wallet.connect(owner2).approveAndExecuteBatch(txIds)
+        ).to.revertedWithCustomError(wallet, REVERT_ERROR_IF_TRANSACTION_DOES_NOT_EXIST);
+      });
+
+      it("Is reverted if a transaction from the batch is already approved by the same owner", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        for (const tx of txs) {
+          await proveTx(wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data));
+        }
+        const lastTx: TestTx = txs[txs.length - 1];
+        await proveTx(wallet.connect(owner2).approve(lastTx.id));
+
+        await expect(
+          wallet.connect(owner2).approveAndExecuteBatch(txIds)
+        ).to.revertedWithCustomError(wallet, REVERT_ERROR_IF_TRANSACTION_IS_ALREADY_APPROVED);
+      });
+
+      it("Is reverted if a transaction from the batch is already executed", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        for (const tx of txs) {
+          await proveTx(wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data));
+        }
+        const lastTx: TestTx = txs[txs.length - 1];
+        await proveTx(wallet.connect(owner2).approveAndExecute(lastTx.id));
+
+        await expect(
+          wallet.connect(owner3).approveAndExecuteBatch(txIds)
+        ).to.revertedWithCustomError(wallet, REVERT_ERROR_IF_TRANSACTION_IS_ALREADY_EXECUTED);
+      });
+
+      it("Is reverted if a transaction from the batch has not enough approvals", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        for (const tx of txs) {
+          await proveTx(wallet.connect(owner1).submit(tx.to, tx.value, tx.data));
+        }
+        await proveTx(wallet.connect(owner1).approveBatch(txIds.slice(0, -1)));
+
+        await expect(
+          wallet.connect(owner2).approveAndExecuteBatch(txIds)
+        ).to.revertedWithCustomError(wallet, REVERT_ERROR_IF_TRANSACTION_HAS_NOT_ENOUGH_APPROVALS);
+      });
+
+      it("Is reverted if the internal transaction execution fails", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        const lastTx: TestTx = txs[txs.length - 1];
+        lastTx.value = TX_VALUE_STUB;
+        for (const tx of txs) {
+          await proveTx(wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data));
+        }
+
+        await expect(wallet.connect(owner2).approveAndExecuteBatch(txIds))
+          .to.revertedWithCustomError(wallet, REVERT_ERROR_IF_INTERNAL_TRANSACTION_IS_FAILED)
+          .withArgs(DEFAULT_ERROR_DATA);
+      });
+    });
+
     describe("Function 'execute()'", () => {
       const tx: TestTx = {
         id: 0,
-        to: ADDRESS_STUB,
+        to: ADDRESS_STUB1,
         value: 0,
-        data: TX_DATA_STUB
+        data: TX_DATA_STUB1
       };
 
       it("Executes as expected and emits the correct event", async () => {
-        let { wallet } = await setUpFixture(deployWallet);
+        const { wallet } = await setUpFixture(deployWallet);
         await proveTx(wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data));
         await proveTx(wallet.connect(owner2).approve(tx.id));
 
@@ -607,7 +790,7 @@ describe("MultiSigWallet contract", () => {
         tx.executed = true;
 
         const actualTx = await wallet.getTransaction(tx.id);
-        await checkTxEquality(actualTx, tx);
+        checkTxEquality(actualTx, tx);
       });
 
       it("Is reverted if it is called not by an owner", async () => {
@@ -653,16 +836,113 @@ describe("MultiSigWallet contract", () => {
       });
     });
 
+    describe("Function 'executeBatch()'", () => {
+      const txs: TestTx[] = [
+        {
+          id: 0,
+          to: ADDRESS_STUB1,
+          value: 0,
+          data: TX_DATA_STUB1
+        },
+        {
+          id: 1,
+          to: ADDRESS_STUB2,
+          value: 0,
+          data: TX_DATA_STUB2
+        }
+      ];
+      const txIds: number[] = txs.map(tx => tx.id);
+
+      it("Executes as expected and emits the correct events", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        for (const tx of txs) {
+          await proveTx(wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data));
+        }
+        await proveTx(wallet.connect(owner2).approveBatch(txIds));
+
+        const txResponse = wallet.connect(owner3).executeBatch(txIds);
+
+        for (const tx of txs) {
+          await expect(txResponse)
+            .to.emit(wallet, EVENT_NAME_EXECUTE)
+            .withArgs(owner3.address, tx.id);
+          tx.executed = true;
+          const actualTx = await wallet.getTransaction(tx.id);
+          checkTxEquality(actualTx, tx);
+        }
+      });
+
+      it("Is reverted if it is called not by an owner", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        await expect(
+          wallet.executeBatch(txIds)
+        ).to.revertedWithCustomError(wallet, REVERT_ERROR_IF_UNAUTHORIZED_CALLER);
+      });
+
+      it("Is reverted if a transaction from the batch does not exist", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        for (const tx of txs.slice(0, -1)) {
+          await proveTx(wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data));
+        }
+        await proveTx(wallet.connect(owner2).approveBatch(txIds.slice(0, -1)));
+
+        await expect(
+          wallet.connect(owner3).executeBatch(txIds)
+        ).to.revertedWithCustomError(wallet, REVERT_ERROR_IF_TRANSACTION_DOES_NOT_EXIST);
+      });
+
+      it("Is reverted if a transaction from the batch is already executed", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        for (const tx of txs) {
+          await proveTx(wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data));
+        }
+        await proveTx(wallet.connect(owner2).approveBatch(txIds));
+
+        const lastTx = txs[txs.length - 1];
+        await proveTx(wallet.connect(owner2).execute(lastTx.id));
+
+        await expect(
+          wallet.connect(owner3).executeBatch(txIds)
+        ).to.revertedWithCustomError(wallet, REVERT_ERROR_IF_TRANSACTION_IS_ALREADY_EXECUTED);
+      });
+
+      it("Is reverted if the transaction has not enough approvals", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        for (const tx of txs) {
+          await proveTx(wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data));
+        }
+        await proveTx(wallet.connect(owner2).approveBatch(txIds.slice(0, -1)));
+
+        await expect(
+          wallet.connect(owner3).executeBatch(txIds)
+        ).to.revertedWithCustomError(wallet, REVERT_ERROR_IF_TRANSACTION_HAS_NOT_ENOUGH_APPROVALS);
+      });
+
+      it("Is reverted if the internal transaction execution fails", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        const lastTx: TestTx = txs[txs.length - 1];
+        lastTx.value = TX_VALUE_STUB;
+        for (const tx of txs) {
+          await proveTx(wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data));
+        }
+        await proveTx(wallet.connect(owner2).approveBatch(txIds));
+
+        await expect(wallet.connect(owner3).executeBatch(txIds))
+          .to.revertedWithCustomError(wallet, REVERT_ERROR_IF_INTERNAL_TRANSACTION_IS_FAILED)
+          .withArgs(DEFAULT_ERROR_DATA);
+      });
+    });
+
     describe("Function 'revoke()'", () => {
       const tx: TestTx = {
         id: 0,
-        to: ADDRESS_STUB,
+        to: ADDRESS_STUB1,
         value: 0,
-        data: TX_DATA_STUB
+        data: TX_DATA_STUB1
       };
 
       it("Executes as expected and emits the correct event", async () => {
-        let { wallet } = await setUpFixture(deployWallet);
+        const { wallet } = await setUpFixture(deployWallet);
         await proveTx(wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data));
         expect(await wallet.getApprovalStatus(tx.id, owner1.address)).to.eq(true);
 
@@ -705,6 +985,85 @@ describe("MultiSigWallet contract", () => {
       });
     });
 
+    describe("Function 'revokeBatch()'", () => {
+      const txs: TestTx[] = [
+        {
+          id: 0,
+          to: ADDRESS_STUB1,
+          value: 0,
+          data: TX_DATA_STUB1
+        },
+        {
+          id: 1,
+          to: ADDRESS_STUB2,
+          value: 0,
+          data: TX_DATA_STUB2
+        }
+      ];
+      const txIds: number[] = txs.map(tx => tx.id);
+
+      it("Executes as expected and emits the correct events", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        for (const tx of txs) {
+          await proveTx(wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data));
+          expect(await wallet.getApprovalStatus(tx.id, owner1.address)).to.eq(true);
+        }
+
+        const txResponse = wallet.connect(owner1).revokeBatch(txIds);
+
+        for (const tx of txs) {
+          await expect(txResponse)
+            .to.emit(wallet, EVENT_NAME_REVOKE)
+            .withArgs(owner1.address, tx.id);
+          expect(await wallet.getApprovalStatus(tx.id, owner1.address)).to.eq(false);
+        }
+      });
+
+      it("Is reverted if it is called not by an owner", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        await expect(
+          wallet.revokeBatch(txIds)
+        ).to.revertedWithCustomError(wallet, REVERT_ERROR_IF_UNAUTHORIZED_CALLER);
+      });
+
+      it("Is reverted if a transaction from the batch does not exist", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        for (const tx of txs.slice(0, -1)) {
+          await proveTx(wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data));
+        }
+
+        await expect(
+          wallet.connect(owner1).revokeBatch(txIds)
+        ).to.revertedWithCustomError(wallet, REVERT_ERROR_IF_TRANSACTION_DOES_NOT_EXIST);
+      });
+
+      it("Is reverted if a transaction from the batch is already executed", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        for (const tx of txs) {
+          await proveTx(wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data));
+        }
+
+        const lastTx = txs[txs.length - 1];
+        await proveTx(wallet.connect(owner2).approveAndExecute(lastTx.id));
+
+        await expect(
+          wallet.connect(owner1).revokeBatch(txIds)
+        ).to.revertedWithCustomError(wallet, REVERT_ERROR_IF_TRANSACTION_IS_ALREADY_EXECUTED);
+      });
+
+      it("Is reverted if a transaction from the batch is not approved by the owner", async () => {
+        const { wallet } = await setUpFixture(deployWallet);
+        for (const tx of txs) {
+          await proveTx(wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data));
+        }
+        await proveTx(wallet.connect(owner2).approveBatch(txIds.slice(0, -1)));
+
+        await expect(
+          wallet.connect(owner2).revokeBatch(txIds)
+        ).to.revertedWithCustomError(wallet, REVERT_ERROR_IF_TRANSACTION_IS_NOT_APPROVED);
+      });
+    });
+
     describe("Functions 'getTransaction()' and 'getTransactions()'", () => {
       const txs: TestTx[] = [0, 1, 2, 3].map(id => {
         return {
@@ -717,7 +1076,7 @@ describe("MultiSigWallet contract", () => {
 
       it("Execute as expected in different cases", async () => {
         const { wallet } = await setUpFixture(deployWallet);
-        for (let tx of txs) {
+        for (const tx of txs) {
           await proveTx(wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data));
         }
         await proveTx(wallet.connect(owner2).approveAndExecute(txs[0].id));
@@ -725,7 +1084,7 @@ describe("MultiSigWallet contract", () => {
 
         expect(await wallet.transactionCount()).to.eq(txs.length);
 
-        for (let tx of txs) {
+        for (const tx of txs) {
           const actualTx = await wallet.getTransaction(tx.id);
           checkTxEquality(actualTx, tx);
         }
@@ -738,7 +1097,7 @@ describe("MultiSigWallet contract", () => {
           await expect(wallet.getTransaction(txs.length)).to.reverted;
         }
 
-        let actualTxs: any[];
+        let actualTxs: TestTx[];
 
         actualTxs = await wallet.getTransactions(0, 50);
         checkTxArrayEquality(actualTxs, txs);
@@ -769,9 +1128,9 @@ describe("MultiSigWallet contract", () => {
     describe("Scenarios with cooldown and expiration", () => {
       const tx: TestTx = {
         id: 0,
-        to: ADDRESS_STUB,
+        to: ADDRESS_STUB1,
         value: 0,
-        data: TX_DATA_STUB
+        data: TX_DATA_STUB1
       };
 
       async function wait(timeoutInSeconds: number) {
@@ -910,7 +1269,7 @@ describe("MultiSigWallet contract", () => {
             })
           );
 
-          const txResponse: TransactionResponse = await wallet.connect(owner2).approveAndExecute(tx.id);
+          const txResponse = wallet.connect(owner2).approveAndExecute(tx.id);
           await expect(txResponse)
             .to.emit(wallet, EVENT_NAME_EXECUTE)
             .withArgs(owner2.address, tx.id);

@@ -23,6 +23,21 @@ Smart contracts are [audited](https://github.com/mixbytes/audits_public) by [Mix
 - [PDF Report](https://github.com/mixbytes/audits_public/blob/master/CloudWalk/CloudWalk%20Multisig%20Wallet%20Audit%20Report.pdf)
 - [PDF Report (local copy)](CloudWalk%20Multisig%20Wallet%20Audit%20Report.pdf)
 
+NOTE: There have been some changes in the contracts since the last audit, but they are not related to the main logic.
+
+## Project Setup
+1. Clone the repo.
+2. Create the `.env` file based on the `.env.example` one:
+    * Windows:
+    ```sh
+    copy .env.example .env
+    ```
+    * MacOS/Linux:
+    ```sh
+    cp .env.example .env
+    ```
+3. Update settings in the newly created `.env` file if needed (e.g. another solidity version, number of optimization runs, private keys (PK) for networks, network RPC URLs, etc.).
+
 ## Build and test
 
 ```sh

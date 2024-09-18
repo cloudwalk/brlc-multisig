@@ -3,8 +3,9 @@ import { expect } from "chai";
 import { Contract, ContractFactory } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
+import { proveTx } from "../test-utils/eth";
 
-async function setUpFixture(func: any) {
+async function setUpFixture<T>(func: () => Promise<T>): Promise<T> {
   if (network.name === "hardhat") {
     return loadFixture(func);
   } else {
@@ -14,7 +15,7 @@ async function setUpFixture(func: any) {
 
 describe("Contract 'MultiSigWalletUpgradeable'", () => {
   const REQUIRED_APPROVALS = 2;
-  const TEN_DAYS = 3600 * 24 * 10;
+  const DEFAULT_EXPIRATION_TIME = 3600 * 24 * 10;
 
   const REVERT_MESSAGE_IF_CONTRACT_IS_ALREADY_INITIALIZED = "Initializable: contract is already initialized";
 
@@ -24,26 +25,20 @@ describe("Contract 'MultiSigWalletUpgradeable'", () => {
   const REVERT_ERROR_IF_ZERO_OWNER_ADDRESS = "ZeroOwnerAddress";
   const REVERT_ERROR_UNAUTHORIZED_CALLER = "UnauthorizedCaller";
 
-  let tokenFactory: ContractFactory;
   let walletUpgradeableFactory: ContractFactory;
   let walletFactory: ContractFactory;
-  let proxyAdminFactory: ContractFactory;
 
-  let deployer: SignerWithAddress;
   let owner1: SignerWithAddress;
   let owner2: SignerWithAddress;
   let owner3: SignerWithAddress;
-  let user: SignerWithAddress;
 
   let ownerAddresses: string[];
 
   before(async () => {
-    [deployer, owner1, owner2, owner3, user] = await ethers.getSigners();
+    [, owner1, owner2, owner3] = await ethers.getSigners();
     ownerAddresses = [owner1.address, owner2.address, owner3.address];
     walletUpgradeableFactory = await ethers.getContractFactory("MultiSigWalletUpgradeable");
     walletFactory = await ethers.getContractFactory("MultiSigWallet");
-    tokenFactory = await ethers.getContractFactory("TestContractMock");
-    proxyAdminFactory = await ethers.getContractFactory("ProxyAdminMock");
   });
 
   async function checkOwnership(
@@ -92,12 +87,13 @@ describe("Contract 'MultiSigWalletUpgradeable'", () => {
     };
   }
 
-  async function encodeUpgradeFunctionData(newImplementation: string) {
-    const { wallet } = await deployWalletUpgradeable();
-    let ABI = ["function upgradeTo(address newImplementation)"];
+  function encodeUpgradeFunctionData(newImplementationAddress: string) {
+    const ABI = ["function upgradeTo(address newImplementation)"];
     const upgradeInterface = new ethers.utils.Interface(ABI);
-    const upgradeData = await upgradeInterface.encodeFunctionData("upgradeTo", [newImplementation]);
-    return upgradeData;
+    return upgradeInterface.encodeFunctionData(
+      "upgradeTo",
+      [newImplementationAddress]
+    );
   }
 
   describe("Function 'initialize()'", () => {
@@ -108,7 +104,7 @@ describe("Contract 'MultiSigWalletUpgradeable'", () => {
       expect(await wallet.requiredApprovals()).to.eq(REQUIRED_APPROVALS);
       expect(await wallet.transactionCount()).to.eq(0);
       expect(await wallet.cooldownTime()).to.eq(0);
-      expect(await wallet.expirationTime()).to.eq(TEN_DAYS);
+      expect(await wallet.expirationTime()).to.eq(DEFAULT_EXPIRATION_TIME);
       await checkOwnership(wallet, {
         ownerAddresses,
         expectedOwnershipStatus: true
@@ -137,7 +133,7 @@ describe("Contract 'MultiSigWalletUpgradeable'", () => {
       ).to.be.revertedWithCustomError(walletUpgradeableFactory, REVERT_ERROR_IF_INVALID_REQUIRED_APPROVALS);
     });
 
-    it("Is reverted if the input number of required approvals exceeds the length of the input owner array", async () => {
+    it("Is reverted if the number of required approvals exceeds the length of the owner array", async () => {
       const uninitializedWallet = await upgrades.deployProxy(walletUpgradeableFactory, [], { initializer: false });
       const requiredApprovals = ownerAddresses.length + 1;
       await expect(
@@ -174,6 +170,26 @@ describe("Contract 'MultiSigWalletUpgradeable'", () => {
   });
 
   describe("Scenarios with contract upgrades", () => {
+    it("Upgrade is executed as expected when it is called by the wallet itself", async () => {
+      const { wallet } = await setUpFixture(deployAllContracts);
+
+      const newImplementation = await walletUpgradeableFactory.deploy([]);
+      await newImplementation.deployed();
+
+      const oldImplementationAddress: string = await upgrades.erc1967.getImplementationAddress(wallet.address);
+      expect(oldImplementationAddress).not.to.be.equal(newImplementation.address);
+
+      await proveTx(wallet.connect(owner1).submitAndApprove(
+        wallet.address, // to
+        0, // value
+        encodeUpgradeFunctionData(newImplementation.address) // data
+      ));
+      await proveTx(wallet.connect(owner2).approveAndExecute(0));
+
+      const newImplementationAddress: string = await upgrades.erc1967.getImplementationAddress(wallet.address);
+      expect(newImplementationAddress).to.be.equal(newImplementation.address);
+    });
+
     it("Upgrade is reverted if caller is not a multisig", async () => {
       const { wallet } = await setUpFixture(deployAllContracts);
 

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.16;
+pragma solidity ^0.8.0;
 
 /**
  * @title MultiSigWallet types interface
@@ -36,28 +36,28 @@ interface IMultiSigWallet is IMultiSigWalletTypes {
     /**
      * @dev Emitted when a new transaction is submitted.
      * @param owner The address that submitted the transaction.
-     * @param txId The Id of the transaction that is submitted.
+     * @param txId The ID of the transaction that is submitted.
      */
     event Submit(address indexed owner, uint256 indexed txId);
 
     /**
      * @dev Emitted when a transaction is approved.
      * @param owner The address that approved the transaction.
-     * @param txId The Id of the transaction that is approved.
+     * @param txId The ID of the transaction that is approved.
      */
     event Approve(address indexed owner, uint256 indexed txId);
 
     /**
      * @dev Emitted when a transaction approval is revoked.
      * @param owner The address that revoked the transaction approval.
-     * @param txId The Id of the transaction whose approval is revoked.
+     * @param txId The ID of the transaction whose approval is revoked.
      */
     event Revoke(address indexed owner, uint256 indexed txId);
 
     /**
      * @dev Emitted when a transaction is executed.
      * @param owner The address that executed the transaction.
-     * @param txId The Id of the transaction that is executed.
+     * @param txId The ID of the transaction that is executed.
      */
     event Execute(address indexed owner, uint256 indexed txId);
 
@@ -118,9 +118,18 @@ interface IMultiSigWallet is IMultiSigWalletTypes {
      *
      * Emits an {Approve} event.
      *
-     * @param txId The Id of the transaction to approve.
+     * @param txId The ID of the transaction to approve.
      */
     function approve(uint256 txId) external;
+
+    /**
+     * @dev Approves a batch of previously submitted transactions.
+     *
+     * Emits an {Approve} event for each transaction.
+     *
+     * @param txIds The ID array of the transactions to approve.
+     */
+    function approveBatch(uint256[] calldata txIds) external;
 
     /**
      * @dev Approves and executes a previously submitted transaction.
@@ -128,27 +137,55 @@ interface IMultiSigWallet is IMultiSigWalletTypes {
      * Emits an {Approve} event.
      * Emits an {Execute} event.
      *
-     * @param txId The Id of the transaction to approve and execute.
+     * @param txId The ID of the transaction to approve and execute.
      */
     function approveAndExecute(uint256 txId) external;
+
+    /**
+     * @dev Approves and executes a batch of previously submitted transactions.
+     *
+     * Emits an {Approve} event for each transaction.
+     * Emits an {Execute} event for each transaction.
+     *
+     * @param txIds The ID array of the transactions to approve and execute.
+     */
+    function approveAndExecuteBatch(uint256[] calldata txIds) external;
 
     /**
      * @dev Executes a previously submitted transaction.
      *
      * Emits an {Execute} event.
      *
-     * @param txId The Id of the transaction to execute.
+     * @param txId The ID of the transaction to execute.
      */
     function execute(uint256 txId) external;
 
     /**
-     * @dev Revokes a previously approved status of a transaction.
+     * @dev Executes a batch of previously submitted transactions.
+     *
+     * Emits an {Execute} event for each transaction.
+     *
+     * @param txIds The ID array of the transactions to execute.
+     */
+    function executeBatch(uint256[] calldata txIds) external;
+
+    /**
+     * @dev Revokes the approved status from a transaction.
      *
      * Emits a {Revoke} event.
      *
-     * @param txId The Id of the transaction to revoke the approved status.
+     * @param txId The ID of the transaction to revoke the approved status.
      */
     function revoke(uint256 txId) external;
+
+    /**
+     * @dev Revokes the approved status from a batch of transactions.
+     *
+     * Emits a {Revoke} event for each transaction.
+     *
+     * @param txIds The ID array of the transactions to revoke the approved status.
+     */
+    function revokeBatch(uint256[] calldata txIds) external;
 
     /**
      * @dev Configures wallet owners.
@@ -180,13 +217,13 @@ interface IMultiSigWallet is IMultiSigWalletTypes {
 
     /**
      * @dev Returns the number of approvals for a transaction.
-     * @param txId The Id of the transaction to check.
+     * @param txId The ID of the transaction to check.
      */
     function getApprovalCount(uint256 txId) external view returns (uint256);
 
     /**
      * @dev Returns the approval status of a transaction.
-     * @param txId The Id of the transaction to check.
+     * @param txId The ID of the transaction to check.
      * @param owner The address of the wallet owner to check.
      * @return True if the transaction is approved.
      */
@@ -194,13 +231,13 @@ interface IMultiSigWallet is IMultiSigWalletTypes {
 
     /**
      * @dev Returns a single transaction.
-     * @param txId The Id of the transaction to return.
+     * @param txId The ID of the transaction to return.
      */
     function getTransaction(uint256 txId) external view returns (Transaction memory);
 
     /**
      * @dev Returns an array of transactions.
-     * @param txId The Id of the first transaction in the range to return.
+     * @param txId The ID of the first transaction in the range to return.
      * @param limit The maximum number of transactions in the range to return.
      */
     function getTransactions(uint256 txId, uint256 limit) external view returns (Transaction[] memory);
