@@ -15,7 +15,7 @@ async function setUpFixture<T>(func: () => Promise<T>): Promise<T> {
 
 describe("Contract 'MultiSigWalletUpgradeable'", () => {
   const REQUIRED_APPROVALS = 2;
-  const TEN_DAYS = 3600 * 24 * 10;
+  const DEFAULT_EXPIRATION_TIME = 3600 * 24 * 10;
 
   const REVERT_MESSAGE_IF_CONTRACT_IS_ALREADY_INITIALIZED = "Initializable: contract is already initialized";
 
@@ -104,7 +104,7 @@ describe("Contract 'MultiSigWalletUpgradeable'", () => {
       expect(await wallet.requiredApprovals()).to.eq(REQUIRED_APPROVALS);
       expect(await wallet.transactionCount()).to.eq(0);
       expect(await wallet.cooldownTime()).to.eq(0);
-      expect(await wallet.expirationTime()).to.eq(TEN_DAYS);
+      expect(await wallet.expirationTime()).to.eq(DEFAULT_EXPIRATION_TIME);
       await checkOwnership(wallet, {
         ownerAddresses,
         expectedOwnershipStatus: true
