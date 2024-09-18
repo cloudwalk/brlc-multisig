@@ -88,7 +88,7 @@ describe("Contract 'MultiSigWalletUpgradeable'", () => {
   }
 
   function encodeUpgradeFunctionData(newImplementationAddress: string) {
-    let ABI = ["function upgradeTo(address newImplementation)"];
+    const ABI = ["function upgradeTo(address newImplementation)"];
     const upgradeInterface = new ethers.utils.Interface(ABI);
     return upgradeInterface.encodeFunctionData(
       "upgradeTo",

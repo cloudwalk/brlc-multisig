@@ -926,7 +926,6 @@ describe("MultiSigWallet contract", () => {
       });
     });
 
-
     describe("Function 'revoke()'", () => {
       const tx: TestTx = {
         id: 0,
@@ -998,12 +997,12 @@ describe("MultiSigWallet contract", () => {
 
       it("Executes as expected and emits the correct events", async () => {
         const { wallet } = await setUpFixture(deployWallet);
-        for(const tx of txs) {
+        for (const tx of txs) {
           await proveTx(wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data));
           expect(await wallet.getApprovalStatus(tx.id, owner1.address)).to.eq(true);
         }
 
-        const txResponse = wallet.connect(owner1).revokeBatch(txIds)
+        const txResponse = wallet.connect(owner1).revokeBatch(txIds);
 
         for (const tx of txs) {
           await expect(txResponse)
@@ -1011,7 +1010,6 @@ describe("MultiSigWallet contract", () => {
             .withArgs(owner1.address, tx.id);
           expect(await wallet.getApprovalStatus(tx.id, owner1.address)).to.eq(false);
         }
-
       });
 
       it("Is reverted if it is called not by an owner", async () => {
@@ -1023,7 +1021,7 @@ describe("MultiSigWallet contract", () => {
 
       it("Is reverted if a transaction from the batch does not exist", async () => {
         const { wallet } = await setUpFixture(deployWallet);
-        for(const tx of txs.slice(0, -1)) {
+        for (const tx of txs.slice(0, -1)) {
           await proveTx(wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data));
         }
 
@@ -1035,7 +1033,7 @@ describe("MultiSigWallet contract", () => {
       it("Is reverted if a transaction from the batch is already executed", async () => {
         const { wallet } = await setUpFixture(deployWallet);
         const lastTx = txs[txs.length - 1];
-        for(const tx of txs) {
+        for (const tx of txs) {
           await proveTx(wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data));
         }
         await proveTx(wallet.connect(owner2).approveAndExecute(lastTx.id));
@@ -1047,11 +1045,10 @@ describe("MultiSigWallet contract", () => {
 
       it("Is reverted if a transaction from the batch is not approved by the owner", async () => {
         const { wallet } = await setUpFixture(deployWallet);
-        const lastTx = txs[txs.length - 1];
-        for(const tx of txs) {
+        for (const tx of txs) {
           await proveTx(wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data));
         }
-        await proveTx(wallet.connect(owner2).approveBatch(txIds.slice(0,-1)));
+        await proveTx(wallet.connect(owner2).approveBatch(txIds.slice(0, -1)));
 
         await expect(
           wallet.connect(owner2).revokeBatch(txIds)
