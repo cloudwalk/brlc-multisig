@@ -11,4 +11,6 @@ async function main() {
   console.log("Proxy deployed to:", await proxy.address);
 }
 
-main();
+main().then().catch(err => {
+  throw err;
+});
