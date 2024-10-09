@@ -2,8 +2,8 @@ import { ethers, network, upgrades } from "hardhat";
 import { expect } from "chai";
 import { Contract, ContractFactory } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
-import { loadFixture, time } from "@nomicfoundation/hardhat-network-helpers";
-import { proveTx } from "../test-utils/eth";
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
+import { increaseBlockTimestamp, proveTx } from "../test-utils/eth";
 
 interface TestTx {
   id: number;
@@ -1133,17 +1133,6 @@ describe("MultiSigWallet contract", () => {
         data: TX_DATA_STUB1
       };
 
-      async function wait(timeoutInSeconds: number) {
-        if (network.name === "hardhat") {
-          // A virtual wait through network time shifting
-          await time.increase(timeoutInSeconds);
-        } else {
-          // A real wait through a promise
-          const timeoutInMills = timeoutInSeconds * 1000;
-          await new Promise(resolve => setTimeout(resolve, timeoutInMills));
-        }
-      }
-
       async function executeWalletTx(params: { wallet: Contract; txData: string; txId?: number }): Promise<number> {
         const { wallet, txData } = params;
         const txId = params.txId || 0;
@@ -1184,7 +1173,7 @@ describe("MultiSigWallet contract", () => {
         const txId = await executeWalletTx({ wallet, txData });
 
         await proveTx(wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data));
-        await wait(2 * ONE_DAY);
+        await increaseBlockTimestamp(2 * ONE_DAY);
         await expect(
           wallet.connect(owner2).approve(txId)
         ).to.be.revertedWithCustomError(wallet, REVERT_ERROR_IF_TRANSACTION_EXPIRED);
@@ -1213,7 +1202,7 @@ describe("MultiSigWallet contract", () => {
       it("Execution of a transaction is reverted if the transaction is already expired", async () => {
         const { wallet, txId } = await prepareExecutionWithSingleApproval();
         await proveTx(wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data));
-        await wait(2 * ONE_DAY);
+        await increaseBlockTimestamp(2 * ONE_DAY);
         await expect(
           wallet.connect(owner1).execute(txId)
         ).to.be.revertedWithCustomError(wallet, REVERT_ERROR_IF_TRANSACTION_EXPIRED);
@@ -1223,7 +1212,7 @@ describe("MultiSigWallet contract", () => {
         const { wallet, txId } = await prepareExecutionWithSingleApproval();
 
         await proveTx(wallet.connect(owner1).submitAndApprove(tx.to, tx.value, tx.data));
-        await wait(2 * ONE_DAY);
+        await increaseBlockTimestamp(2 * ONE_DAY);
         await expect(
           wallet.connect(owner1).revoke(txId)
         ).to.be.revertedWithCustomError(wallet, REVERT_ERROR_IF_TRANSACTION_EXPIRED);
