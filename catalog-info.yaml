@@ -1,0 +1,21 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: brlc-multisig
+  description: BRLC multisig smart contracts
+  annotations:
+    github.com/project-slug: cloudwalk/brlc-multisig
+    backstage.io/techdocs-ref: dir:.
+  tags:
+    - solidity
+    - typescript
+    - blockchain
+    - smart-contract
+  links:
+    - url: https://github.com/cloudwalk/brlc-multisig
+      title: Repository
+      icon: github
+spec:
+  type: smart contract
+  lifecycle: production
+  owner: team-smart-contracts
