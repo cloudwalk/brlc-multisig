@@ -2,7 +2,7 @@ apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
   name: brlc-multisig
-  description: BRLC multisig smart contracts
+  description: Multisig smart contracts
   annotations:
     github.com/project-slug: cloudwalk/brlc-multisig
     backstage.io/techdocs-ref: dir:.
