@@ -14,10 +14,10 @@ import { MultiSigWalletBase } from "./base/MultiSigWalletBase.sol";
  */
 contract MultiSigWalletUpgradeable is Initializable, UUPSUpgradeable, MultiSigWalletBase {
     /**
-     * @dev Constructor that prohibits the initialization of the implementation of the upgradable contract.
+     * @dev Constructor that prohibits the initialization of the implementation of the upgradeable contract.
      *
      * See details
-     * https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable#initializing_the_implementation_contract
+     * https://docs.openzeppelin.com/upgrades-plugins/writing-upgradeable#initializing_the_implementation_contract
      *
      * @custom:oz-upgrades-unsafe-allow constructor
      */
@@ -26,9 +26,9 @@ contract MultiSigWalletUpgradeable is Initializable, UUPSUpgradeable, MultiSigWa
     }
 
     /**
-     * @dev The initializer of the upgradable contract.
+     * @dev The initializer of the upgradeable contract.
      *
-     * See details https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable
+     * See details: https://docs.openzeppelin.com/upgrades-plugins/writing-upgradeable
      *
      * Requirements:
      *
