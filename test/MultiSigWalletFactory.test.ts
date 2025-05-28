@@ -1,7 +1,7 @@
 import { ethers, network } from "hardhat";
 import { expect } from "chai";
 import { Contract, ContractFactory } from "ethers";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
+import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 
 async function setUpFixture<T>(func: () => Promise<T>): Promise<T> {
@@ -13,6 +13,7 @@ async function setUpFixture<T>(func: () => Promise<T>): Promise<T> {
 }
 
 describe("Contract 'MultisigWalletFactory'", () => {
+  const ADDRESS_ZERO = ethers.ZeroAddress;
   const REQUIRED_APPROVALS = 2;
   const ONE_YEAR = 3600 * 24 * 365;
 
@@ -26,9 +27,9 @@ describe("Contract 'MultisigWalletFactory'", () => {
   let walletFactory: ContractFactory;
   let factoryContractFactory: ContractFactory;
 
-  let owner1: SignerWithAddress;
-  let owner2: SignerWithAddress;
-  let owner3: SignerWithAddress;
+  let owner1: HardhatEthersSigner;
+  let owner2: HardhatEthersSigner;
+  let owner3: HardhatEthersSigner;
 
   let ownerAddresses: string[];
 
@@ -40,8 +41,8 @@ describe("Contract 'MultisigWalletFactory'", () => {
   });
 
   async function deployFactory(): Promise<{ factory: Contract }> {
-    const factory = await factoryContractFactory.deploy();
-    await factory.deployed();
+    const factory = await factoryContractFactory.deploy() as Contract;
+    await factory.waitForDeployment();
     return {
       factory
     };
@@ -92,7 +93,7 @@ describe("Contract 'MultisigWalletFactory'", () => {
 
     it("Is reverted if one of the input owners is the zero address", async () => {
       const { factory } = await setUpFixture(deployFactory);
-      const ownerAddressArray = [ownerAddresses[0], ownerAddresses[1], ethers.constants.AddressZero];
+      const ownerAddressArray = [ownerAddresses[0], ownerAddresses[1], ADDRESS_ZERO];
       const requiredApprovals = ownerAddressArray.length - 1;
 
       await expect(
