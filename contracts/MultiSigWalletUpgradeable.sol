@@ -39,28 +39,6 @@ contract MultiSigWalletUpgradeable is Initializable, UUPSUpgradeable, MultiSigWa
      * @param newRequiredApprovals The number of required approvals to execute a transaction.
      */
     function initialize(address[] memory newOwners, uint16 newRequiredApprovals) external initializer {
-        __Multisig_init(newOwners, newRequiredApprovals);
-    }
-
-    /**
-     * @dev The internal initializer of the upgradable contract.
-     *
-     * See {MultiSigWalletUpgradeable-initialize}.
-     */
-    function __Multisig_init(address[] memory newOwners, uint16 newRequiredApprovals) internal onlyInitializing {
-        __Multisig_init_unchained(newOwners, newRequiredApprovals);
-    }
-
-    /**
-     * @dev The unchained internal initializer of the upgradable contract.
-     *
-     * See {MultiSigWalletUpgradeable-initialize}.
-     */
-    function __Multisig_init_unchained(address[] memory newOwners, uint16 newRequiredApprovals)
-        internal
-        onlyInitializing
-    {
-        __UUPSUpgradeable_init_unchained();
         _configureExpirationTime(10 days);
         _configureOwners(newOwners, newRequiredApprovals);
     }
