@@ -8,7 +8,15 @@
 ![example branch parameter](https://github.com/cloudwalk/brlc-multisig/actions/workflows/build.yml/badge.svg?branch=main)
 ![example branch parameter](https://github.com/cloudwalk/brlc-multisig/actions/workflows/test.yml/badge.svg?branch=main)
 
-The purpose of multisig wallets is to increase security by requiring multiple parties to agree on transactions before execution. Transactions can be executed only when confirmed by a predefined number of owners.
+The purpose of multisig wallets is to increase security by requiring multiple parties to agree on transactions before execution. Transactions can be executed only when confirmed by a predefined number of owners. The project provides two implementations:
+
+- A standard non-upgradeable implementation (`MultiSigWallet.sol`)
+- An upgradeable implementation (`MultiSigWalletUpgradeable.sol`) using the UUPS pattern
+
+Key features:
+- Configurable number of required approvals
+- Transaction expiration time
+- Comprehensive security measures
 
 ## Documentation
 
