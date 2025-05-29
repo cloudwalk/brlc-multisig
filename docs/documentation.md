@@ -1,6 +1,6 @@
 # Multisig wallet
 
-BRLC-multisig is a multi-signature wallet used to ensure the decentralization and security of any processes performed through interaction with smart contracts. Only owners of the multisig wallet can submit, approve, execute and revoke transactions. All transactions have a cooldown period and expiration time. Transactions cannot be executed before the end of the cooldown period and cannot be executed after the expiration. The default cooldown period is zero seconds. The default expiration time is 10. Both values can be changed after multisig is deployed.
+BRLC-multisig is a multi-signature wallet used to ensure the decentralization and security of any processes performed through interaction with smart contracts. Only owners of the multisig wallet can submit, approve, execute and revoke transactions. All transactions have a cooldown period and expiration time. Transactions cannot be executed before the end of the cooldown period and cannot be executed after the expiration. The default cooldown period is zero seconds. The default expiration time is 10 days. Both values can be changed after multisig is deployed.
 
 <hr>
 
