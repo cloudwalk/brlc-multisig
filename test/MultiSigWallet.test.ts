@@ -44,6 +44,7 @@ describe("MultiSigWallet contract", () => {
   const TWO_HOURS = 7200;
   const ONE_DAY = 3600 * 24;
   const ONE_YEAR = 3600 * 24 * 365;
+  const DEFAULT_EXPIRATION_TIME = ONE_DAY * 10;
 
   const ADDRESS_STUB1 = "0x0000000000000000000000000000000000000001";
   const ADDRESS_STUB2 = "0x0000000000000000000000000000000000000002";
@@ -180,7 +181,7 @@ describe("MultiSigWallet contract", () => {
       expect(await wallet.requiredApprovals()).to.eq(REQUIRED_APPROVALS);
       expect(await wallet.transactionCount()).to.eq(0);
       expect(await wallet.cooldownTime()).to.eq(0);
-      expect(await wallet.expirationTime()).to.eq(ONE_YEAR);
+      expect(await wallet.expirationTime()).to.eq(DEFAULT_EXPIRATION_TIME);
       await checkOwnership(wallet, {
         ownerAddresses,
         expectedOwnershipStatus: true
@@ -1155,7 +1156,7 @@ describe("MultiSigWallet contract", () => {
         const timestamp: number = await getTxTimestamp(txResponse);
         const txStruct = await wallet.getTransaction(txId);
         expect(txStruct.cooldown).to.eq(timestamp + TWO_HOURS);
-        expect(txStruct.expiration).to.eq(timestamp + TWO_HOURS + ONE_YEAR);
+        expect(txStruct.expiration).to.eq(timestamp + TWO_HOURS + DEFAULT_EXPIRATION_TIME);
       });
 
       it("Execution of a transaction is reverted if the transaction is still on the cooldown", async () => {

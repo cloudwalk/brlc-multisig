@@ -17,7 +17,7 @@ contract MultiSigWallet is MultiSigWalletBase {
      * @param newRequiredApprovals The number of required approvals to execute a transaction.
      */
     constructor(address[] memory newOwners, uint16 newRequiredApprovals) {
-        _configureExpirationTime(365 days);
+        _configureExpirationTime(10 days);
         _configureOwners(newOwners, newRequiredApprovals);
     }
 }

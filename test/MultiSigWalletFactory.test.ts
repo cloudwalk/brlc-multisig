@@ -15,7 +15,7 @@ async function setUpFixture<T>(func: () => Promise<T>): Promise<T> {
 describe("Contract 'MultisigWalletFactory'", () => {
   const ADDRESS_ZERO = ethers.ZeroAddress;
   const REQUIRED_APPROVALS = 2;
-  const ONE_YEAR = 3600 * 24 * 365;
+  const DEFAULT_EXPIRATION_TIME = 3600 * 24 * 10;
 
   const EVENT_NAME_NEW_WALLET_DEPLOYED_BY_FACTORY = "NewWallet";
 
@@ -62,7 +62,7 @@ describe("Contract 'MultisigWalletFactory'", () => {
       expect(await wallet.requiredApprovals()).to.eq(REQUIRED_APPROVALS);
       expect(await wallet.transactionCount()).to.eq(0);
       expect(await wallet.cooldownTime()).to.eq(0);
-      expect(await wallet.expirationTime()).to.eq(ONE_YEAR);
+      expect(await wallet.expirationTime()).to.eq(DEFAULT_EXPIRATION_TIME);
     });
 
     it("Is reverted if the input owner array is empty", async () => {
