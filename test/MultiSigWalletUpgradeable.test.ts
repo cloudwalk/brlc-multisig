@@ -15,8 +15,8 @@ describe("Contract 'MultiSigWalletUpgradeable'", () => {
   const ERROR_NAME_DUPLICATE_OWNER_ADDRESS = "DuplicateOwnerAddress";
   const ERROR_NAME_EMPTY_OWNERS_ARRAY = "EmptyOwnersArray";
   const ERROR_NAME_INVALID_REQUIRED_APPROVALS = "InvalidRequiredApprovals";
-  const ERROR_NAME_ZERO_OWNER_ADDRESS = "ZeroOwnerAddress";
   const ERROR_NAME_UNAUTHORIZED_CALLER = "UnauthorizedCaller";
+  const ERROR_NAME_ZERO_OWNER_ADDRESS = "ZeroOwnerAddress";
 
   let walletUpgradeableFactory: ContractFactory;
   let walletFactory: ContractFactory;
