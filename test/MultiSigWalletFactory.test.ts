@@ -19,10 +19,10 @@ describe("Contract 'MultisigWalletFactory'", () => {
 
   const EVENT_NAME_NEW_WALLET_DEPLOYED_BY_FACTORY = "NewWallet";
 
-  const ERROR_NAME_IF_DUPLICATE_OWNER_ADDRESS = "DuplicateOwnerAddress";
-  const ERROR_NAME_IF_EMPTY_OWNERS_ARRAY = "EmptyOwnersArray";
-  const ERROR_NAME_IF_INVALID_REQUIRED_APPROVALS = "InvalidRequiredApprovals";
-  const ERROR_NAME_IF_ZERO_OWNER_ADDRESS = "ZeroOwnerAddress";
+  const ERROR_NAME_DUPLICATE_OWNER_ADDRESS = "DuplicateOwnerAddress";
+  const ERROR_NAME_EMPTY_OWNERS_ARRAY = "EmptyOwnersArray";
+  const ERROR_NAME_INVALID_REQUIRED_APPROVALS = "InvalidRequiredApprovals";
+  const ERROR_NAME_ZERO_OWNER_ADDRESS = "ZeroOwnerAddress";
 
   let walletFactory: ContractFactory;
   let factoryContractFactory: ContractFactory;
@@ -70,7 +70,7 @@ describe("Contract 'MultisigWalletFactory'", () => {
 
       await expect(
         factory.deployNewWallet([], REQUIRED_APPROVALS)
-      ).to.be.revertedWithCustomError(walletFactory, ERROR_NAME_IF_EMPTY_OWNERS_ARRAY);
+      ).to.be.revertedWithCustomError(walletFactory, ERROR_NAME_EMPTY_OWNERS_ARRAY);
     });
 
     it("Is reverted if the input number of required approvals is zero", async () => {
@@ -79,7 +79,7 @@ describe("Contract 'MultisigWalletFactory'", () => {
       const requiredApprovals = 0;
       await expect(
         factory.deployNewWallet(ownerAddresses, requiredApprovals)
-      ).to.be.revertedWithCustomError(walletFactory, ERROR_NAME_IF_INVALID_REQUIRED_APPROVALS);
+      ).to.be.revertedWithCustomError(walletFactory, ERROR_NAME_INVALID_REQUIRED_APPROVALS);
     });
 
     it("Is reverted if the number of required approvals exceeds the length of the owner array", async () => {
@@ -88,7 +88,7 @@ describe("Contract 'MultisigWalletFactory'", () => {
       const requiredApprovals = ownerAddresses.length + 1;
       await expect(
         factory.deployNewWallet(ownerAddresses, requiredApprovals)
-      ).to.be.revertedWithCustomError(walletFactory, ERROR_NAME_IF_INVALID_REQUIRED_APPROVALS);
+      ).to.be.revertedWithCustomError(walletFactory, ERROR_NAME_INVALID_REQUIRED_APPROVALS);
     });
 
     it("Is reverted if one of the input owners is the zero address", async () => {
@@ -98,7 +98,7 @@ describe("Contract 'MultisigWalletFactory'", () => {
 
       await expect(
         factory.deployNewWallet(ownerAddressArray, requiredApprovals)
-      ).to.be.revertedWithCustomError(walletFactory, ERROR_NAME_IF_ZERO_OWNER_ADDRESS);
+      ).to.be.revertedWithCustomError(walletFactory, ERROR_NAME_ZERO_OWNER_ADDRESS);
     });
 
     it("Deployment is reverted if there is a duplicate address in the input owner array", async () => {
@@ -107,7 +107,7 @@ describe("Contract 'MultisigWalletFactory'", () => {
       const requiredApprovals = ownerAddresses.length - 1;
       await expect(
         factory.deployNewWallet(ownerAddressArray, requiredApprovals)
-      ).to.be.revertedWithCustomError(walletFactory, ERROR_NAME_IF_DUPLICATE_OWNER_ADDRESS);
+      ).to.be.revertedWithCustomError(walletFactory, ERROR_NAME_DUPLICATE_OWNER_ADDRESS);
     });
   });
 
