@@ -10,7 +10,7 @@ describe("Contract 'MultiSigWalletUpgradeable'", () => {
   const REQUIRED_APPROVALS = 2;
   const DEFAULT_EXPIRATION_TIME = 3600 * 24 * 10;
 
-  const REVERT_MESSAGE_IF_CONTRACT_IS_ALREADY_INITIALIZED = "Initializable: contract is already initialized";
+  const ERROR_MESSAGE_IF_CONTRACT_IS_ALREADY_INITIALIZED = "Initializable: contract is already initialized";
 
   const ERROR_NAME_IF_DUPLICATE_OWNER_ADDRESS = "DuplicateOwnerAddress";
   const ERROR_NAME_IF_EMPTY_OWNERS_ARRAY = "EmptyOwnersArray";
@@ -110,7 +110,7 @@ describe("Contract 'MultiSigWalletUpgradeable'", () => {
       const { wallet } = await setUpFixture(deployWalletUpgradeable);
       await expect(
         wallet.initialize(ownerAddresses, REQUIRED_APPROVALS)
-      ).to.be.revertedWith(REVERT_MESSAGE_IF_CONTRACT_IS_ALREADY_INITIALIZED);
+      ).to.be.revertedWith(ERROR_MESSAGE_IF_CONTRACT_IS_ALREADY_INITIALIZED);
     });
 
     it("Is reverted if the input owner array is empty", async () => {
@@ -165,7 +165,7 @@ describe("Contract 'MultiSigWalletUpgradeable'", () => {
 
       await expect(
         wallet.initialize(ownerAddresses, REQUIRED_APPROVALS)
-      ).to.be.revertedWith(REVERT_MESSAGE_IF_CONTRACT_IS_ALREADY_INITIALIZED);
+      ).to.be.revertedWith(ERROR_MESSAGE_IF_CONTRACT_IS_ALREADY_INITIALIZED);
     });
   });
 
