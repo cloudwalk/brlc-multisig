@@ -189,39 +189,34 @@ describe("MultiSigWallet contract", () => {
     });
 
     it("Deployment is reverted if the input owner array is empty", async () => {
-      await expect(
-        walletFactory.deploy([], REQUIRED_APPROVALS)
-      ).to.be.revertedWithCustomError(walletFactory, ERROR_NAME_EMPTY_OWNERS_ARRAY);
+      await expect(walletFactory.deploy([], REQUIRED_APPROVALS))
+        .to.be.revertedWithCustomError(walletFactory, ERROR_NAME_EMPTY_OWNERS_ARRAY);
     });
 
     it("Deployment is reverted if the input number of required approvals is zero", async () => {
       const requiredApprovals = 0;
-      await expect(
-        walletFactory.deploy(ownerAddresses, requiredApprovals)
-      ).to.be.revertedWithCustomError(walletFactory, ERROR_NAME_INVALID_REQUIRED_APPROVALS);
+      await expect(walletFactory.deploy(ownerAddresses, requiredApprovals))
+        .to.be.revertedWithCustomError(walletFactory, ERROR_NAME_INVALID_REQUIRED_APPROVALS);
     });
 
     it("Deployment is reverted if the number of required approvals exceeds the length of the owner array", async () => {
       const requiredApprovals = ownerAddresses.length + 1;
-      await expect(
-        walletFactory.deploy(ownerAddresses, requiredApprovals)
-      ).to.be.revertedWithCustomError(walletFactory, ERROR_NAME_INVALID_REQUIRED_APPROVALS);
+      await expect(walletFactory.deploy(ownerAddresses, requiredApprovals))
+        .to.be.revertedWithCustomError(walletFactory, ERROR_NAME_INVALID_REQUIRED_APPROVALS);
     });
 
     it("Deployment is reverted if one of the input owners is the zero address", async () => {
       const ownerAddressArray = [ownerAddresses[0], ownerAddresses[1], ADDRESS_ZERO];
       const requiredApprovals = ownerAddressArray.length - 1;
-      await expect(
-        walletFactory.deploy(ownerAddressArray, requiredApprovals)
-      ).to.be.revertedWithCustomError(walletFactory, ERROR_NAME_ZERO_OWNER_ADDRESS);
+      await expect(walletFactory.deploy(ownerAddressArray, requiredApprovals))
+        .to.be.revertedWithCustomError(walletFactory, ERROR_NAME_ZERO_OWNER_ADDRESS);
     });
 
     it("Deployment is reverted if there is a duplicate address in the input owner array", async () => {
       const ownerAddressArray = [ownerAddresses[0], ownerAddresses[1], ownerAddresses[0]];
       const requiredApprovals = ownerAddresses.length - 1;
-      await expect(
-        walletFactory.deploy(ownerAddressArray, requiredApprovals)
-      ).to.be.revertedWithCustomError(walletFactory, ERROR_NAME_DUPLICATE_OWNER_ADDRESS);
+      await expect(walletFactory.deploy(ownerAddressArray, requiredApprovals))
+        .to.be.revertedWithCustomError(walletFactory, ERROR_NAME_DUPLICATE_OWNER_ADDRESS);
     });
   });
 
@@ -253,9 +248,8 @@ describe("MultiSigWallet contract", () => {
 
       it("Is reverted if the caller is not the multi sig wallet itself", async () => {
         const { wallet } = await setUpFixture(deployWallet);
-        await expect(
-          wallet.configureOwners([], REQUIRED_APPROVALS)
-        ).to.be.revertedWithCustomError(wallet, ERROR_NAME_UNAUTHORIZED_CALLER);
+        await expect(wallet.configureOwners([], REQUIRED_APPROVALS))
+          .to.be.revertedWithCustomError(wallet, ERROR_NAME_UNAUTHORIZED_CALLER);
       });
 
       it("Is reverted if the input owner array is empty", async () => {
@@ -328,9 +322,8 @@ describe("MultiSigWallet contract", () => {
 
       it("Is reverted if the caller is not the multi sig wallet itself", async () => {
         const { wallet } = await setUpFixture(deployWallet);
-        await expect(
-          wallet.configureCooldownTime(ONE_MINUTE)
-        ).to.be.revertedWithCustomError(wallet, ERROR_NAME_UNAUTHORIZED_CALLER);
+        await expect(wallet.configureCooldownTime(ONE_MINUTE))
+          .to.be.revertedWithCustomError(wallet, ERROR_NAME_UNAUTHORIZED_CALLER);
       });
     });
 
@@ -349,9 +342,8 @@ describe("MultiSigWallet contract", () => {
 
       it("Is reverted if the caller is not the multi sig wallet itself", async () => {
         const { wallet } = await setUpFixture(deployWallet);
-        await expect(
-          wallet.configureExpirationTime(ONE_MINUTE)
-        ).to.be.revertedWithCustomError(wallet, ERROR_NAME_UNAUTHORIZED_CALLER);
+        await expect(wallet.configureExpirationTime(ONE_MINUTE))
+          .to.be.revertedWithCustomError(wallet, ERROR_NAME_UNAUTHORIZED_CALLER);
       });
 
       it("Is reverted if passed expiration time is less than minimal allowed", async () => {
@@ -359,9 +351,8 @@ describe("MultiSigWallet contract", () => {
         const txData = encodeConfigureExpirationTimeTimeFunctionData(ONE_MINUTE);
 
         await proveTx(connect(wallet, owner1).submitAndApprove(getAddress(wallet), 0, txData));
-        await expect(
-          connect(wallet, owner2).approveAndExecute(0)
-        ).to.be.revertedWithCustomError(wallet, ERROR_NAME_INTERNAL_TRANSACTION_IS_FAILED);
+        await expect(connect(wallet, owner2).approveAndExecute(0))
+          .to.be.revertedWithCustomError(wallet, ERROR_NAME_INTERNAL_TRANSACTION_IS_FAILED);
       });
     });
 
@@ -416,9 +407,8 @@ describe("MultiSigWallet contract", () => {
 
       it("Is reverted if it is called not by an owner", async () => {
         const { wallet } = await setUpFixture(deployWallet);
-        await expect(
-          wallet.submit(tx.to, tx.value, tx.data)
-        ).to.revertedWithCustomError(wallet, ERROR_NAME_UNAUTHORIZED_CALLER);
+        await expect(wallet.submit(tx.to, tx.value, tx.data))
+          .to.revertedWithCustomError(wallet, ERROR_NAME_UNAUTHORIZED_CALLER);
       });
     });
 
@@ -445,9 +435,8 @@ describe("MultiSigWallet contract", () => {
 
       it("Is reverted if it is called not by an owner", async () => {
         const { wallet } = await setUpFixture(deployWallet);
-        await expect(
-          wallet.submitAndApprove(tx.to, tx.value, tx.data)
-        ).to.revertedWithCustomError(wallet, ERROR_NAME_UNAUTHORIZED_CALLER);
+        await expect(wallet.submitAndApprove(tx.to, tx.value, tx.data))
+          .to.revertedWithCustomError(wallet, ERROR_NAME_UNAUTHORIZED_CALLER);
       });
     });
 
@@ -485,9 +474,8 @@ describe("MultiSigWallet contract", () => {
 
       it("Is reverted if the transaction does not exist", async () => {
         const { wallet } = await setUpFixture(deployWallet);
-        await expect(
-          connect(wallet, owner1).approve(tx.id)
-        ).to.revertedWithCustomError(wallet, ERROR_NAME_TRANSACTION_NOT_EXIST);
+        await expect(connect(wallet, owner1).approve(tx.id))
+          .to.revertedWithCustomError(wallet, ERROR_NAME_TRANSACTION_NOT_EXIST);
       });
 
       it("Is reverted if the transaction is already executed", async () => {
@@ -495,18 +483,16 @@ describe("MultiSigWallet contract", () => {
         await proveTx(connect(wallet, owner1).submitAndApprove(tx.to, tx.value, tx.data));
         await proveTx(connect(wallet, owner2).approveAndExecute(tx.id));
 
-        await expect(
-          connect(wallet, owner3).approve(tx.id)
-        ).to.revertedWithCustomError(wallet, ERROR_NAME_TRANSACTION_ALREADY_EXECUTED);
+        await expect(connect(wallet, owner3).approve(tx.id))
+          .to.revertedWithCustomError(wallet, ERROR_NAME_TRANSACTION_ALREADY_EXECUTED);
       });
 
       it("Is reverted if the transaction is already approved by the same owner", async () => {
         const { wallet } = await setUpFixture(deployWallet);
         await proveTx(connect(wallet, owner1).submitAndApprove(tx.to, tx.value, tx.data));
 
-        await expect(
-          connect(wallet, owner1).approve(tx.id)
-        ).to.revertedWithCustomError(wallet, ERROR_NAME_TRANSACTION_ALREADY_APPROVED);
+        await expect(connect(wallet, owner1).approve(tx.id))
+          .to.revertedWithCustomError(wallet, ERROR_NAME_TRANSACTION_ALREADY_APPROVED);
       });
     });
 
@@ -555,9 +541,8 @@ describe("MultiSigWallet contract", () => {
 
       it("Is reverted if it is called not by an owner", async () => {
         const { wallet } = await setUpFixture(deployWallet);
-        await expect(
-          wallet.approveBatch(txIds)
-        ).to.revertedWithCustomError(wallet, ERROR_NAME_UNAUTHORIZED_CALLER);
+        await expect(wallet.approveBatch(txIds))
+          .to.revertedWithCustomError(wallet, ERROR_NAME_UNAUTHORIZED_CALLER);
       });
 
       it("Is reverted if a transaction from the batch does not exist", async () => {
@@ -565,9 +550,8 @@ describe("MultiSigWallet contract", () => {
         for (const tx of txs.slice(0, -1)) {
           await proveTx(connect(wallet, owner1).submit(tx.to, tx.value, tx.data));
         }
-        await expect(
-          connect(wallet, owner1).approveBatch(txIds)
-        ).to.revertedWithCustomError(wallet, ERROR_NAME_TRANSACTION_NOT_EXIST);
+        await expect(connect(wallet, owner1).approveBatch(txIds))
+          .to.revertedWithCustomError(wallet, ERROR_NAME_TRANSACTION_NOT_EXIST);
       });
 
       it("Is reverted if a transaction from the batch is already executed", async () => {
@@ -578,9 +562,8 @@ describe("MultiSigWallet contract", () => {
         const lastTx: TestTx = txs[txs.length - 1];
         await proveTx(connect(wallet, owner2).approveAndExecute(lastTx.id));
 
-        await expect(
-          connect(wallet, owner3).approveBatch(txIds)
-        ).to.revertedWithCustomError(wallet, ERROR_NAME_TRANSACTION_ALREADY_EXECUTED);
+        await expect(connect(wallet, owner3).approveBatch(txIds))
+          .to.revertedWithCustomError(wallet, ERROR_NAME_TRANSACTION_ALREADY_EXECUTED);
       });
 
       it("Is reverted if the transaction is already approved by the same owner", async () => {
@@ -591,9 +574,8 @@ describe("MultiSigWallet contract", () => {
         const lastTx: TestTx = txs[txs.length - 1];
         await proveTx(connect(wallet, owner1).approve(lastTx.id));
 
-        await expect(
-          connect(wallet, owner1).approveBatch(txIds)
-        ).to.revertedWithCustomError(wallet, ERROR_NAME_TRANSACTION_ALREADY_APPROVED);
+        await expect(connect(wallet, owner1).approveBatch(txIds))
+          .to.revertedWithCustomError(wallet, ERROR_NAME_TRANSACTION_ALREADY_APPROVED);
       });
     });
 
@@ -622,25 +604,22 @@ describe("MultiSigWallet contract", () => {
 
       it("Is reverted if it is called not by an owner", async () => {
         const { wallet } = await setUpFixture(deployWallet);
-        await expect(
-          wallet.approveAndExecute(tx.id)
-        ).to.revertedWithCustomError(wallet, ERROR_NAME_UNAUTHORIZED_CALLER);
+        await expect(wallet.approveAndExecute(tx.id))
+          .to.revertedWithCustomError(wallet, ERROR_NAME_UNAUTHORIZED_CALLER);
       });
 
       it("Is reverted if the transaction does not exist", async () => {
         const { wallet } = await setUpFixture(deployWallet);
-        await expect(
-          connect(wallet, owner1).approveAndExecute(tx.id)
-        ).to.revertedWithCustomError(wallet, ERROR_NAME_TRANSACTION_NOT_EXIST);
+        await expect(connect(wallet, owner1).approveAndExecute(tx.id))
+          .to.revertedWithCustomError(wallet, ERROR_NAME_TRANSACTION_NOT_EXIST);
       });
 
       it("Is reverted if the transaction is already approved by the same owner", async () => {
         const { wallet } = await setUpFixture(deployWallet);
         await proveTx(connect(wallet, owner1).submitAndApprove(tx.to, tx.value, tx.data));
 
-        await expect(
-          connect(wallet, owner1).approveAndExecute(tx.id)
-        ).to.revertedWithCustomError(wallet, ERROR_NAME_TRANSACTION_ALREADY_APPROVED);
+        await expect(connect(wallet, owner1).approveAndExecute(tx.id))
+          .to.revertedWithCustomError(wallet, ERROR_NAME_TRANSACTION_ALREADY_APPROVED);
       });
 
       it("Is reverted if the transaction is already executed", async () => {
@@ -648,18 +627,16 @@ describe("MultiSigWallet contract", () => {
         await proveTx(connect(wallet, owner1).submitAndApprove(tx.to, tx.value, tx.data));
         await proveTx(connect(wallet, owner2).approveAndExecute(tx.id));
 
-        await expect(
-          connect(wallet, owner3).approveAndExecute(tx.id)
-        ).to.revertedWithCustomError(wallet, ERROR_NAME_TRANSACTION_ALREADY_EXECUTED);
+        await expect(connect(wallet, owner3).approveAndExecute(tx.id))
+          .to.revertedWithCustomError(wallet, ERROR_NAME_TRANSACTION_ALREADY_EXECUTED);
       });
 
       it("Is reverted if the transaction has not enough approvals", async () => {
         const { wallet } = await setUpFixture(deployWallet);
         await proveTx(connect(wallet, owner1).submit(tx.to, tx.value, tx.data));
 
-        await expect(
-          connect(wallet, owner1).approveAndExecute(tx.id)
-        ).to.revertedWithCustomError(wallet, ERROR_NAME_NOT_ENOUGH_APPROVALS);
+        await expect(connect(wallet, owner1).approveAndExecute(tx.id))
+          .to.revertedWithCustomError(wallet, ERROR_NAME_NOT_ENOUGH_APPROVALS);
       });
 
       it("Is reverted if the internal transaction execution fails", async () => {
@@ -709,9 +686,8 @@ describe("MultiSigWallet contract", () => {
 
       it("Is reverted if it is called not by an owner", async () => {
         const { wallet } = await setUpFixture(deployWallet);
-        await expect(
-          wallet.approveAndExecuteBatch(txIds)
-        ).to.revertedWithCustomError(wallet, ERROR_NAME_UNAUTHORIZED_CALLER);
+        await expect(wallet.approveAndExecuteBatch(txIds))
+          .to.revertedWithCustomError(wallet, ERROR_NAME_UNAUTHORIZED_CALLER);
       });
 
       it("Is reverted if a transaction from the batch does not exist", async () => {
@@ -720,9 +696,8 @@ describe("MultiSigWallet contract", () => {
           await proveTx(connect(wallet, owner1).submitAndApprove(tx.to, tx.value, tx.data));
         }
 
-        await expect(
-          connect(wallet, owner2).approveAndExecuteBatch(txIds)
-        ).to.revertedWithCustomError(wallet, ERROR_NAME_TRANSACTION_NOT_EXIST);
+        await expect(connect(wallet, owner2).approveAndExecuteBatch(txIds))
+          .to.revertedWithCustomError(wallet, ERROR_NAME_TRANSACTION_NOT_EXIST);
       });
 
       it("Is reverted if a transaction from the batch is already approved by the same owner", async () => {
@@ -733,9 +708,8 @@ describe("MultiSigWallet contract", () => {
         const lastTx: TestTx = txs[txs.length - 1];
         await proveTx(connect(wallet, owner2).approve(lastTx.id));
 
-        await expect(
-          connect(wallet, owner2).approveAndExecuteBatch(txIds)
-        ).to.revertedWithCustomError(wallet, ERROR_NAME_TRANSACTION_ALREADY_APPROVED);
+        await expect(connect(wallet, owner2).approveAndExecuteBatch(txIds))
+          .to.revertedWithCustomError(wallet, ERROR_NAME_TRANSACTION_ALREADY_APPROVED);
       });
 
       it("Is reverted if a transaction from the batch is already executed", async () => {
@@ -746,9 +720,8 @@ describe("MultiSigWallet contract", () => {
         const lastTx: TestTx = txs[txs.length - 1];
         await proveTx(connect(wallet, owner2).approveAndExecute(lastTx.id));
 
-        await expect(
-          connect(wallet, owner3).approveAndExecuteBatch(txIds)
-        ).to.revertedWithCustomError(wallet, ERROR_NAME_TRANSACTION_ALREADY_EXECUTED);
+        await expect(connect(wallet, owner3).approveAndExecuteBatch(txIds))
+          .to.revertedWithCustomError(wallet, ERROR_NAME_TRANSACTION_ALREADY_EXECUTED);
       });
 
       it("Is reverted if a transaction from the batch has not enough approvals", async () => {
@@ -758,9 +731,8 @@ describe("MultiSigWallet contract", () => {
         }
         await proveTx(connect(wallet, owner1).approveBatch(txIds.slice(0, -1)));
 
-        await expect(
-          connect(wallet, owner2).approveAndExecuteBatch(txIds)
-        ).to.revertedWithCustomError(wallet, ERROR_NAME_NOT_ENOUGH_APPROVALS);
+        await expect(connect(wallet, owner2).approveAndExecuteBatch(txIds))
+          .to.revertedWithCustomError(wallet, ERROR_NAME_NOT_ENOUGH_APPROVALS);
       });
 
       it("Is reverted if the internal transaction execution fails", async () => {
@@ -806,9 +778,8 @@ describe("MultiSigWallet contract", () => {
 
       it("Is reverted if the transaction does not exist", async () => {
         const { wallet } = await setUpFixture(deployWallet);
-        await expect(
-          connect(wallet, owner1).execute(tx.id)
-        ).to.revertedWithCustomError(wallet, ERROR_NAME_TRANSACTION_NOT_EXIST);
+        await expect(connect(wallet, owner1).execute(tx.id))
+          .to.revertedWithCustomError(wallet, ERROR_NAME_TRANSACTION_NOT_EXIST);
       });
 
       it("Is reverted if the transaction is already executed", async () => {
@@ -816,18 +787,16 @@ describe("MultiSigWallet contract", () => {
         await proveTx(connect(wallet, owner1).submitAndApprove(tx.to, tx.value, tx.data));
         await proveTx(connect(wallet, owner2).approveAndExecute(tx.id));
 
-        await expect(
-          connect(wallet, owner3).execute(tx.id)
-        ).to.revertedWithCustomError(wallet, ERROR_NAME_TRANSACTION_ALREADY_EXECUTED);
+        await expect(connect(wallet, owner3).execute(tx.id))
+          .to.revertedWithCustomError(wallet, ERROR_NAME_TRANSACTION_ALREADY_EXECUTED);
       });
 
       it("Is reverted if the transaction has not enough approvals", async () => {
         const { wallet } = await setUpFixture(deployWallet);
         await proveTx(connect(wallet, owner1).submitAndApprove(tx.to, tx.value, tx.data));
 
-        await expect(
-          connect(wallet, owner1).execute(tx.id)
-        ).to.revertedWithCustomError(wallet, ERROR_NAME_NOT_ENOUGH_APPROVALS);
+        await expect(connect(wallet, owner1).execute(tx.id))
+          .to.revertedWithCustomError(wallet, ERROR_NAME_NOT_ENOUGH_APPROVALS);
       });
 
       it("Is reverted if the internal transaction execution fails", async () => {
@@ -880,9 +849,8 @@ describe("MultiSigWallet contract", () => {
 
       it("Is reverted if it is called not by an owner", async () => {
         const { wallet } = await setUpFixture(deployWallet);
-        await expect(
-          wallet.executeBatch(txIds)
-        ).to.revertedWithCustomError(wallet, ERROR_NAME_UNAUTHORIZED_CALLER);
+        await expect(wallet.executeBatch(txIds))
+          .to.revertedWithCustomError(wallet, ERROR_NAME_UNAUTHORIZED_CALLER);
       });
 
       it("Is reverted if a transaction from the batch does not exist", async () => {
@@ -892,9 +860,8 @@ describe("MultiSigWallet contract", () => {
         }
         await proveTx(connect(wallet, owner2).approveBatch(txIds.slice(0, -1)));
 
-        await expect(
-          connect(wallet, owner3).executeBatch(txIds)
-        ).to.revertedWithCustomError(wallet, ERROR_NAME_TRANSACTION_NOT_EXIST);
+        await expect(connect(wallet, owner3).executeBatch(txIds))
+          .to.revertedWithCustomError(wallet, ERROR_NAME_TRANSACTION_NOT_EXIST);
       });
 
       it("Is reverted if a transaction from the batch is already executed", async () => {
@@ -907,9 +874,8 @@ describe("MultiSigWallet contract", () => {
         const lastTx = txs[txs.length - 1];
         await proveTx(connect(wallet, owner2).execute(lastTx.id));
 
-        await expect(
-          connect(wallet, owner3).executeBatch(txIds)
-        ).to.revertedWithCustomError(wallet, ERROR_NAME_TRANSACTION_ALREADY_EXECUTED);
+        await expect(connect(wallet, owner3).executeBatch(txIds))
+          .to.revertedWithCustomError(wallet, ERROR_NAME_TRANSACTION_ALREADY_EXECUTED);
       });
 
       it("Is reverted if the transaction has not enough approvals", async () => {
@@ -919,9 +885,8 @@ describe("MultiSigWallet contract", () => {
         }
         await proveTx(connect(wallet, owner2).approveBatch(txIds.slice(0, -1)));
 
-        await expect(
-          connect(wallet, owner3).executeBatch(txIds)
-        ).to.revertedWithCustomError(wallet, ERROR_NAME_NOT_ENOUGH_APPROVALS);
+        await expect(connect(wallet, owner3).executeBatch(txIds))
+          .to.revertedWithCustomError(wallet, ERROR_NAME_NOT_ENOUGH_APPROVALS);
       });
 
       it("Is reverted if the internal transaction execution fails", async () => {
@@ -966,9 +931,8 @@ describe("MultiSigWallet contract", () => {
 
       it("Is reverted if the transaction does not exist", async () => {
         const { wallet } = await setUpFixture(deployWallet);
-        await expect(
-          connect(wallet, owner1).revoke(tx.id)
-        ).to.revertedWithCustomError(wallet, ERROR_NAME_TRANSACTION_NOT_EXIST);
+        await expect(connect(wallet, owner1).revoke(tx.id))
+          .to.revertedWithCustomError(wallet, ERROR_NAME_TRANSACTION_NOT_EXIST);
       });
 
       it("Is reverted if the transaction is already executed", async () => {
@@ -976,18 +940,16 @@ describe("MultiSigWallet contract", () => {
         await proveTx(connect(wallet, owner1).submitAndApprove(tx.to, tx.value, tx.data));
         await proveTx(connect(wallet, owner2).approveAndExecute(tx.id));
 
-        await expect(
-          connect(wallet, owner1).revoke(tx.id)
-        ).to.revertedWithCustomError(wallet, ERROR_NAME_TRANSACTION_ALREADY_EXECUTED);
+        await expect(connect(wallet, owner1).revoke(tx.id))
+          .to.revertedWithCustomError(wallet, ERROR_NAME_TRANSACTION_ALREADY_EXECUTED);
       });
 
       it("Is reverted if the transaction is not approved by the owner", async () => {
         const { wallet } = await setUpFixture(deployWallet);
         await proveTx(connect(wallet, owner1).submitAndApprove(tx.to, tx.value, tx.data));
 
-        await expect(
-          connect(wallet, owner2).revoke(tx.id)
-        ).to.revertedWithCustomError(wallet, ERROR_NAME_TRANSACTION_NOT_APPROVED);
+        await expect(connect(wallet, owner2).revoke(tx.id))
+          .to.revertedWithCustomError(wallet, ERROR_NAME_TRANSACTION_NOT_APPROVED);
       });
     });
 
@@ -1027,9 +989,8 @@ describe("MultiSigWallet contract", () => {
 
       it("Is reverted if it is called not by an owner", async () => {
         const { wallet } = await setUpFixture(deployWallet);
-        await expect(
-          wallet.revokeBatch(txIds)
-        ).to.revertedWithCustomError(wallet, ERROR_NAME_UNAUTHORIZED_CALLER);
+        await expect(wallet.revokeBatch(txIds))
+          .to.revertedWithCustomError(wallet, ERROR_NAME_UNAUTHORIZED_CALLER);
       });
 
       it("Is reverted if a transaction from the batch does not exist", async () => {
@@ -1038,9 +999,8 @@ describe("MultiSigWallet contract", () => {
           await proveTx(connect(wallet, owner1).submitAndApprove(tx.to, tx.value, tx.data));
         }
 
-        await expect(
-          connect(wallet, owner1).revokeBatch(txIds)
-        ).to.revertedWithCustomError(wallet, ERROR_NAME_TRANSACTION_NOT_EXIST);
+        await expect(connect(wallet, owner1).revokeBatch(txIds))
+          .to.revertedWithCustomError(wallet, ERROR_NAME_TRANSACTION_NOT_EXIST);
       });
 
       it("Is reverted if a transaction from the batch is already executed", async () => {
@@ -1052,9 +1012,8 @@ describe("MultiSigWallet contract", () => {
         const lastTx = txs[txs.length - 1];
         await proveTx(connect(wallet, owner2).approveAndExecute(lastTx.id));
 
-        await expect(
-          connect(wallet, owner1).revokeBatch(txIds)
-        ).to.revertedWithCustomError(wallet, ERROR_NAME_TRANSACTION_ALREADY_EXECUTED);
+        await expect(connect(wallet, owner1).revokeBatch(txIds))
+          .to.revertedWithCustomError(wallet, ERROR_NAME_TRANSACTION_ALREADY_EXECUTED);
       });
 
       it("Is reverted if a transaction from the batch is not approved by the owner", async () => {
@@ -1064,9 +1023,8 @@ describe("MultiSigWallet contract", () => {
         }
         await proveTx(connect(wallet, owner2).approveBatch(txIds.slice(0, -1)));
 
-        await expect(
-          connect(wallet, owner2).revokeBatch(txIds)
-        ).to.revertedWithCustomError(wallet, ERROR_NAME_TRANSACTION_NOT_APPROVED);
+        await expect(connect(wallet, owner2).revokeBatch(txIds))
+          .to.revertedWithCustomError(wallet, ERROR_NAME_TRANSACTION_NOT_APPROVED);
       });
     });
 
@@ -1096,9 +1054,8 @@ describe("MultiSigWallet contract", () => {
         }
 
         if (network.name === "hardhat") {
-          await expect(
-            wallet.getTransaction(txs.length)
-          ).to.revertedWithCustomError(wallet, ERROR_NAME_TRANSACTION_NOT_EXIST);
+          await expect(wallet.getTransaction(txs.length))
+            .to.revertedWithCustomError(wallet, ERROR_NAME_TRANSACTION_NOT_EXIST);
         } else {
           await expect(wallet.getTransaction(txs.length)).to.reverted;
         }
@@ -1166,9 +1123,8 @@ describe("MultiSigWallet contract", () => {
 
         await proveTx(connect(wallet, owner1).submitAndApprove(tx.to, tx.value, tx.data));
 
-        await expect(
-          connect(wallet, owner2).approveAndExecute(txId)
-        ).to.be.revertedWithCustomError(wallet, ERROR_NAME_COOLDOWN_NOT_ENDED);
+        await expect(connect(wallet, owner2).approveAndExecute(txId))
+          .to.be.revertedWithCustomError(wallet, ERROR_NAME_COOLDOWN_NOT_ENDED);
       });
 
       it("Approval of a transaction is reverted if the transaction is already expired", async () => {
@@ -1178,9 +1134,8 @@ describe("MultiSigWallet contract", () => {
 
         await proveTx(connect(wallet, owner1).submitAndApprove(tx.to, tx.value, tx.data));
         await increaseBlockTimestamp(2 * ONE_DAY);
-        await expect(
-          connect(wallet, owner2).approve(txId)
-        ).to.be.revertedWithCustomError(wallet, ERROR_NAME_TRANSACTION_EXPIRED);
+        await expect(connect(wallet, owner2).approve(txId))
+          .to.be.revertedWithCustomError(wallet, ERROR_NAME_TRANSACTION_EXPIRED);
       });
 
       async function prepareExecutionWithSingleApproval(): Promise<{
@@ -1207,9 +1162,8 @@ describe("MultiSigWallet contract", () => {
         const { wallet, txId } = await prepareExecutionWithSingleApproval();
         await proveTx(connect(wallet, owner1).submitAndApprove(tx.to, tx.value, tx.data));
         await increaseBlockTimestamp(2 * ONE_DAY);
-        await expect(
-          connect(wallet, owner1).execute(txId)
-        ).to.be.revertedWithCustomError(wallet, ERROR_NAME_TRANSACTION_EXPIRED);
+        await expect(connect(wallet, owner1).execute(txId))
+          .to.be.revertedWithCustomError(wallet, ERROR_NAME_TRANSACTION_EXPIRED);
       });
 
       it("Revocation of a transaction is reverted if the transaction is already expired", async () => {
@@ -1217,9 +1171,8 @@ describe("MultiSigWallet contract", () => {
 
         await proveTx(connect(wallet, owner1).submitAndApprove(tx.to, tx.value, tx.data));
         await increaseBlockTimestamp(2 * ONE_DAY);
-        await expect(
-          connect(wallet, owner1).revoke(txId)
-        ).to.be.revertedWithCustomError(wallet, ERROR_NAME_TRANSACTION_EXPIRED);
+        await expect(connect(wallet, owner1).revoke(txId))
+          .to.be.revertedWithCustomError(wallet, ERROR_NAME_TRANSACTION_EXPIRED);
       });
     });
 
