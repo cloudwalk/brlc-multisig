@@ -13,7 +13,7 @@ import { MultiSigWalletStorage } from "./MultiSigWalletStorage.sol";
 abstract contract MultiSigWalletBase is MultiSigWalletStorage, IMultiSigWallet {
     // ------------------ Constants ------------------------------- //
 
-    /// @dev The minimal transaction expiration time.
+    /// @dev The minimum transaction expiration time.
     uint256 public constant MINIMUM_EXPIRATION_TIME = 60 minutes;
 
     // ------------------ Errors ---------------------------------- //
@@ -48,7 +48,7 @@ abstract contract MultiSigWalletBase is MultiSigWalletStorage, IMultiSigWallet {
     /// @dev The number of approvals for a given transaction is less than the required minimum.
     error NotEnoughApprovals();
 
-    /// @dev A low level call/transaction to the transaction receiver failed.
+    /// @dev A low-level call/transaction to the transaction receiver failed.
     error InternalTransactionFailed(bytes data);
 
     /// @dev A transaction with the specified ID has already expired.
@@ -57,7 +57,7 @@ abstract contract MultiSigWalletBase is MultiSigWalletStorage, IMultiSigWallet {
     /// @dev A transaction with the specified ID is on cooldown.
     error CooldownNotEnded();
 
-    /// @dev The invalid amount of time was passed when configuring the expiration time.
+    /// @dev An invalid amount of time was passed when configuring the expiration time.
     error InvalidExpirationTime();
 
     // ------------------ Modifiers ------------------------------- //

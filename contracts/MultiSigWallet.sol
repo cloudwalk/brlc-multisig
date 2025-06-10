@@ -11,7 +11,7 @@ import { MultiSigWalletBase } from "./base/MultiSigWalletBase.sol";
  */
 contract MultiSigWallet is MultiSigWalletBase {
     /**
-     * @dev Constructor that sets multisig owners and number of required approvals.
+     * @dev Constructor that sets multi-signature wallet owners and number of required approvals.
      *
      * @param newOwners An array of wallet owners.
      * @param newRequiredApprovals The number of required approvals to execute a transaction.

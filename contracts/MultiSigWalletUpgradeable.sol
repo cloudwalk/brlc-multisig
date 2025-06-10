@@ -58,7 +58,7 @@ contract MultiSigWalletUpgradeable is Initializable, UUPSUpgradeable, MultiSigWa
      *
      * Requirements:
      *
-     * - The caller must be the multisig itself.
+     * - The caller must be the multi-signature wallet itself.
      */
     function _authorizeUpgrade(address newImplementation)
         internal
