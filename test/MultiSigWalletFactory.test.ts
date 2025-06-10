@@ -4,7 +4,7 @@ import { Contract, ContractFactory } from "ethers";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import { setUpFixture } from "../test-utils/common";
 
-describe("Contract 'MultisigWalletFactory'", () => {
+describe("Contract 'MultiSigWalletFactory'", () => {
   const ADDRESS_ZERO = ethers.ZeroAddress;
   const REQUIRED_APPROVALS = 2;
   const DEFAULT_EXPIRATION_TIME = 3600 * 24 * 10;
@@ -97,7 +97,7 @@ describe("Contract 'MultisigWalletFactory'", () => {
     });
   });
 
-  describe("Function 'getWalletsCount()'", async () => {
+  describe("Function 'walletsCount()'", async () => {
     it("Returns the amount of deployed wallets", async () => {
       const { factory } = await setUpFixture(deployFactory);
 
