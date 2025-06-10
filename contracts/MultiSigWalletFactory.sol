@@ -6,7 +6,7 @@ import { MultiSigWallet } from "./MultiSigWallet.sol";
 
 /**
  * @title MultiSigWalletFactory contract
- * @author CloudWalk Inc.
+ * @author CloudWalk Inc. (See https://www.cloudwalk.io)
  * @dev The contract factory for creating new multisig wallet contracts.
  */
 contract MultiSigWalletFactory {

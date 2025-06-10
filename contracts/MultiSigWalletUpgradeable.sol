@@ -9,7 +9,7 @@ import { MultiSigWalletBase } from "./base/MultiSigWalletBase.sol";
 
 /**
  * @title MultiSigWalletUpgradeable contract
- * @author CloudWalk Inc.
+ * @author CloudWalk Inc. (See https://www.cloudwalk.io)
  * @dev The implementation of the upgradeable multi-signature wallet contract.
  */
 contract MultiSigWalletUpgradeable is Initializable, UUPSUpgradeable, MultiSigWalletBase {

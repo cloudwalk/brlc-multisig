@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 
 /**
  * @title MultiSigWallet types interface
- * @author CloudWalk Inc.
+ * @author CloudWalk Inc. (See https://www.cloudwalk.io)
  */
 interface IMultiSigWalletTypes {
     /// @dev Structure with data of a single transaction.
@@ -20,7 +20,7 @@ interface IMultiSigWalletTypes {
 
 /**
  * @title MultiSigWallet interface
- * @author CloudWalk Inc.
+ * @author CloudWalk Inc. (See https://www.cloudwalk.io)
  * @dev The interface of the multi-signature wallet contract.
  */
 interface IMultiSigWallet is IMultiSigWalletTypes {
