@@ -7,6 +7,8 @@ pragma solidity ^0.8.0;
  * @author CloudWalk Inc. (See https://www.cloudwalk.io)
  */
 interface IMultiSigWalletTypes {
+    // ------------------ Types ----------------------------------- //
+
     /// @dev Structure with data of a single transaction.
     struct Transaction {
         address to;         // The address of the transaction receiver.
@@ -24,7 +26,7 @@ interface IMultiSigWalletTypes {
  * @dev The interface of the multi-signature wallet contract.
  */
 interface IMultiSigWallet is IMultiSigWalletTypes {
-    // --------------------------- Events ---------------------------
+    // ------------------ Events ---------------------------------- //
 
     /**
      * @dev Emitted when native tokens are deposited to the contract.
@@ -80,7 +82,7 @@ interface IMultiSigWallet is IMultiSigWalletTypes {
      */
     event ConfigureCooldownTime(uint256 newCooldownTime);
 
-    // ------------------------- Functions --------------------------
+    // ------------------ Transactional functions ----------------- //
 
     /**
      * @dev Submits a new transaction.
@@ -214,6 +216,8 @@ interface IMultiSigWallet is IMultiSigWalletTypes {
      * @param newCooldownTime The new value of the cooldown time.
      */
     function configureCooldownTime(uint120 newCooldownTime) external;
+
+    // ------------------ View functions -------------------------- //
 
     /**
      * @dev Returns the number of approvals for a transaction.

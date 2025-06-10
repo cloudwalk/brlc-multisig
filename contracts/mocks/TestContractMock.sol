@@ -7,14 +7,22 @@ pragma solidity ^0.8.4;
  * @dev Simple mock contract for test purposes.
  */
 contract TestContractMock {
+    // ------------------ Storage --------------------------------- //
+
     /// @dev The state of the contract.
     bool private _disabled;
+
+    // ------------------ Events ---------------------------------- //
 
     /// @dev Emitted when `testFunction` function is executed.
     event TestEvent(address sender, uint256 value, uint256 amount);
 
+    // ------------------ Errors ---------------------------------- //
+
     /// @dev A test error with some message
     error TestError(string message);
+
+    // ------------------ Transactional functions ----------------- //
 
     /**
      * @dev Test function.

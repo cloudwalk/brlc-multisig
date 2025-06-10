@@ -10,6 +10,9 @@ import { MultiSigWallet } from "./MultiSigWallet.sol";
  * @dev The contract factory for creating new multisig wallet contracts.
  */
 contract MultiSigWalletFactory {
+
+    // ------------------ Events ---------------------------------- //
+
     /**
      * @dev Emitted when a new multisig wallet is deployed.
      * @param deployer The address of the wallet deployer.
@@ -18,8 +21,12 @@ contract MultiSigWalletFactory {
      */
     event NewWallet(address indexed deployer, address indexed wallet, uint indexed id);
 
+    // ------------------ Storage --------------------------------- //
+
     /// @dev An array of wallets deployed by this factory.
     address[] public wallets;
+
+    // ------------------ Transactional functions ----------------- //
 
     /**
      * @dev Deploys a new multisig wallet contract.
@@ -33,6 +40,8 @@ contract MultiSigWalletFactory {
         emit NewWallet(msg.sender, newWallet, wallets.length - 1);
         return newWallet;
     }
+
+    // ------------------ View functions -------------------------- //
 
     /**
      * @dev Returns the number of deployed wallets.

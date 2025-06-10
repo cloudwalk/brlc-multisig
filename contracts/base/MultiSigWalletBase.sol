@@ -11,12 +11,12 @@ import { MultiSigWalletStorage } from "./MultiSigWalletStorage.sol";
  * @dev The base of the multi-signature wallet contract.
  */
 abstract contract MultiSigWalletBase is MultiSigWalletStorage, IMultiSigWallet {
-    // --------------------------- Constants ---------------------------
+    // ------------------ Constants ------------------------------- //
 
     /// @dev The minimal transaction expiration time.
     uint256 public constant MINIMUM_EXPIRATION_TIME = 60 minutes;
 
-    // --------------------------- Errors ---------------------------
+    // ------------------ Errors ---------------------------------- //
 
     /// @dev An unauthorized account called a function.
     error UnauthorizedCaller();
@@ -60,7 +60,7 @@ abstract contract MultiSigWalletBase is MultiSigWalletStorage, IMultiSigWallet {
     /// @dev The invalid amount of time was passed when configuring the expiration time.
     error InvalidExpirationTime();
 
-    // ------------------------- Modifiers --------------------------
+    // ------------------ Modifiers ------------------------------- //
 
     /**
      * @dev Throws if called by any account other than a wallet owner.
@@ -82,7 +82,7 @@ abstract contract MultiSigWalletBase is MultiSigWalletStorage, IMultiSigWallet {
         _;
     }
 
-    // ------------------------- Functions --------------------------
+    // ------------------ Transactional functions ----------------- //
 
     /**
      * @dev Called when native tokens are sent to the contract.
@@ -290,6 +290,8 @@ abstract contract MultiSigWalletBase is MultiSigWalletStorage, IMultiSigWallet {
         _configureCooldownTime(newCooldownTime);
     }
 
+    // ------------------ View functions -------------------------- //
+
     /**
      * @inheritdoc IMultiSigWallet
      */
@@ -381,6 +383,8 @@ abstract contract MultiSigWalletBase is MultiSigWalletStorage, IMultiSigWallet {
     function cooldownTime() external view returns (uint120) {
         return _cooldownTime;
     }
+
+    // ------------------ Internal functions ---------------------- //
 
     /**
      * @dev Submits a transaction internally. See {MultiSigWallet-submit}.

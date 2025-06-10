@@ -13,6 +13,8 @@ import { MultiSigWalletBase } from "./base/MultiSigWalletBase.sol";
  * @dev The implementation of the upgradeable multi-signature wallet contract.
  */
 contract MultiSigWalletUpgradeable is Initializable, UUPSUpgradeable, MultiSigWalletBase {
+    // ------------------ Constructor ----------------------------- //
+
     /**
      * @dev Constructor that prohibits the initialization of the implementation of the upgradeable contract.
      *
@@ -24,6 +26,8 @@ contract MultiSigWalletUpgradeable is Initializable, UUPSUpgradeable, MultiSigWa
     constructor() {
         _disableInitializers();
     }
+
+    // ------------------ Initializers ---------------------------- //
 
     /**
      * @dev The initializer of the upgradeable contract.
@@ -42,6 +46,8 @@ contract MultiSigWalletUpgradeable is Initializable, UUPSUpgradeable, MultiSigWa
         _configureExpirationTime(10 days);
         _configureOwners(newOwners, newRequiredApprovals);
     }
+
+    // ------------------ Internal functions ---------------------- //
 
     /**
      * @dev Upgrade authorization function.
