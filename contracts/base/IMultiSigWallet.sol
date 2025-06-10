@@ -7,16 +7,25 @@ pragma solidity ^0.8.0;
  * @author CloudWalk Inc. (See https://www.cloudwalk.io)
  */
 interface IMultiSigWalletTypes {
-    // ------------------ Types ----------------------------------- //
-
-    /// @dev Structure with data of a single transaction.
+    /**
+     * @dev The data of a single transaction.
+     *
+     * The fields:
+     *
+     * - to ---------- The address of the transaction receiver.
+     * - executed ---- The execution status of the transaction. True if executed.
+     * - cooldown ---- The timestamp before which the transaction cannot be executed.
+     * - expiration -- The timestamp after which the transaction cannot be executed.
+     * - value ------- The value in native tokens to be sent along with the transaction.
+     * - data -------- The data to be sent along with the transaction.
+     */
     struct Transaction {
-        address to;         // The address of the transaction receiver.
-        bool executed;      // The execution status of the transaction. True if executed.
-        uint128 cooldown;   // The timestamp before which the transaction cannot be executed.
-        uint128 expiration; // The timestamp after which the transaction cannot be executed.
-        uint256 value;      // The value in native tokens to be sent along with the transaction.
-        bytes data;         // The data to be sent along with the transaction.
+        address to;
+        bool executed;
+        uint128 cooldown;
+        uint128 expiration;
+        uint256 value;
+        bytes data;
     }
 }
 
