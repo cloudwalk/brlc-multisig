@@ -10,7 +10,6 @@ import { MultiSigWallet } from "./MultiSigWallet.sol";
  * @dev The contract factory for creating new multi-signature wallet contracts.
  */
 contract MultiSigWalletFactory {
-
     // ------------------ Events ---------------------------------- //
 
     /**

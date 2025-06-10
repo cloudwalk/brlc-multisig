@@ -103,7 +103,7 @@ interface IMultiSigWallet is IMultiSigWalletTypes {
      * @param data The input data of the transaction.
      */
     function submit(
-        address to,
+        address to, // Tools: this comment prevents Prettier from formatting into a single line.
         uint256 value,
         bytes calldata data
     ) external;
@@ -119,7 +119,7 @@ interface IMultiSigWallet is IMultiSigWalletTypes {
      * @param data The input data of the transaction.
      */
     function submitAndApprove(
-        address to,
+        address to, // Tools: this comment prevents Prettier from formatting into a single line.
         uint256 value,
         bytes calldata data
     ) external;

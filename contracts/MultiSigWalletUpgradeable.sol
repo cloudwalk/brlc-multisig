@@ -60,9 +60,5 @@ contract MultiSigWalletUpgradeable is Initializable, UUPSUpgradeable, MultiSigWa
      *
      * - The caller must be the multi-signature wallet itself.
      */
-    function _authorizeUpgrade(address newImplementation)
-        internal
-        onlySelfCall
-        override
-    {}
+    function _authorizeUpgrade(address newImplementation) internal override onlySelfCall {}
 }
