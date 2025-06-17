@@ -7,16 +7,16 @@ import { MultiSigWalletStorage } from "./MultiSigWalletStorage.sol";
 
 /**
  * @title MultiSigWalletBase contract
- * @author CloudWalk Inc.
+ * @author CloudWalk Inc. (See https://www.cloudwalk.io)
  * @dev The base of the multi-signature wallet contract.
  */
 abstract contract MultiSigWalletBase is MultiSigWalletStorage, IMultiSigWallet {
-    // --------------------------- Constants ---------------------------
+    // ------------------ Constants ------------------------------- //
 
-    /// @dev The minimal transaction expiration time.
+    /// @dev The minimum transaction expiration time.
     uint256 public constant MINIMUM_EXPIRATION_TIME = 60 minutes;
 
-    // --------------------------- Errors ---------------------------
+    // ------------------ Errors ---------------------------------- //
 
     /// @dev An unauthorized account called a function.
     error UnauthorizedCaller();
@@ -48,7 +48,7 @@ abstract contract MultiSigWalletBase is MultiSigWalletStorage, IMultiSigWallet {
     /// @dev The number of approvals for a given transaction is less than the required minimum.
     error NotEnoughApprovals();
 
-    /// @dev A low level call/transaction to the transaction receiver failed.
+    /// @dev A low-level call/transaction to the transaction receiver failed.
     error InternalTransactionFailed(bytes data);
 
     /// @dev A transaction with the specified ID has already expired.
@@ -57,10 +57,10 @@ abstract contract MultiSigWalletBase is MultiSigWalletStorage, IMultiSigWallet {
     /// @dev A transaction with the specified ID is on cooldown.
     error CooldownNotEnded();
 
-    /// @dev The invalid amount of time was passed when configuring the expiration time.
+    /// @dev An invalid amount of time was passed when configuring the expiration time.
     error InvalidExpirationTime();
 
-    // ------------------------- Modifiers --------------------------
+    // ------------------ Modifiers ------------------------------- //
 
     /**
      * @dev Throws if called by any account other than a wallet owner.
@@ -82,7 +82,7 @@ abstract contract MultiSigWalletBase is MultiSigWalletStorage, IMultiSigWallet {
         _;
     }
 
-    // ------------------------- Functions --------------------------
+    // ------------------ Transactional functions ----------------- //
 
     /**
      * @dev Called when native tokens are sent to the contract.
@@ -101,7 +101,7 @@ abstract contract MultiSigWalletBase is MultiSigWalletStorage, IMultiSigWallet {
      * - The caller must be a wallet owner.
      */
     function submit(
-        address to,
+        address to, // Tools: this comment prevents Prettier from formatting into a single line.
         uint256 value,
         bytes calldata data
     ) external onlyOwner {
@@ -116,7 +116,7 @@ abstract contract MultiSigWalletBase is MultiSigWalletStorage, IMultiSigWallet {
      * - The caller must be a wallet owner.
      */
     function submitAndApprove(
-        address to,
+        address to, // Tools: this comment prevents Prettier from formatting into a single line.
         uint256 value,
         bytes calldata data
     ) external onlyOwner {
@@ -152,7 +152,7 @@ abstract contract MultiSigWalletBase is MultiSigWalletStorage, IMultiSigWallet {
     function approveBatch(uint256[] calldata txIds) external onlyOwner {
         uint256 count = txIds.length;
         for (uint256 i = 0; i < count; ++i) {
-            _approve(txIds[i]);   
+            _approve(txIds[i]);
         }
     }
 
@@ -290,6 +290,8 @@ abstract contract MultiSigWalletBase is MultiSigWalletStorage, IMultiSigWallet {
         _configureCooldownTime(newCooldownTime);
     }
 
+    // ------------------ View functions -------------------------- //
+
     /**
      * @inheritdoc IMultiSigWallet
      */
@@ -382,11 +384,13 @@ abstract contract MultiSigWalletBase is MultiSigWalletStorage, IMultiSigWallet {
         return _cooldownTime;
     }
 
+    // ------------------ Internal functions ---------------------- //
+
     /**
      * @dev Submits a transaction internally. See {MultiSigWallet-submit}.
      */
     function _submit(
-        address to,
+        address to, // Tools: this comment prevents Prettier from formatting into a single line.
         uint256 value,
         bytes calldata data
     ) internal returns (uint256 txId) {

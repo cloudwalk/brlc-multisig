@@ -4,27 +4,38 @@ pragma solidity ^0.8.0;
 
 /**
  * @title MultiSigWallet types interface
- * @author CloudWalk Inc.
+ * @author CloudWalk Inc. (See https://www.cloudwalk.io)
  */
 interface IMultiSigWalletTypes {
-    /// @dev Structure with data of a single transaction.
+    /**
+     * @dev The data of a single transaction.
+     *
+     * The fields:
+     *
+     * - to ---------- The address of the transaction receiver.
+     * - executed ---- The execution status of the transaction. True if executed.
+     * - cooldown ---- The timestamp before which the transaction cannot be executed.
+     * - expiration -- The timestamp after which the transaction cannot be executed.
+     * - value ------- The value in native tokens to be sent along with the transaction.
+     * - data -------- The data to be sent along with the transaction.
+     */
     struct Transaction {
-        address to;         // The address of the transaction receiver.
-        bool executed;      // The execution status of the transaction. True if executed.
-        uint128 cooldown;   // The timestamp before which the transaction cannot be executed.
-        uint128 expiration; // The timestamp after which the transaction cannot be executed.
-        uint256 value;      // The value in native tokens to be sent along with the transaction.
-        bytes data;         // The data to be sent along with the transaction.
+        address to;
+        bool executed;
+        uint128 cooldown;
+        uint128 expiration;
+        uint256 value;
+        bytes data;
     }
 }
 
 /**
  * @title MultiSigWallet interface
- * @author CloudWalk Inc.
+ * @author CloudWalk Inc. (See https://www.cloudwalk.io)
  * @dev The interface of the multi-signature wallet contract.
  */
 interface IMultiSigWallet is IMultiSigWalletTypes {
-    // --------------------------- Events ---------------------------
+    // ------------------ Events ---------------------------------- //
 
     /**
      * @dev Emitted when native tokens are deposited to the contract.
@@ -80,7 +91,7 @@ interface IMultiSigWallet is IMultiSigWalletTypes {
      */
     event ConfigureCooldownTime(uint256 newCooldownTime);
 
-    // ------------------------- Functions --------------------------
+    // ------------------ Transactional functions ----------------- //
 
     /**
      * @dev Submits a new transaction.
@@ -92,7 +103,7 @@ interface IMultiSigWallet is IMultiSigWalletTypes {
      * @param data The input data of the transaction.
      */
     function submit(
-        address to,
+        address to, // Tools: this comment prevents Prettier from formatting into a single line.
         uint256 value,
         bytes calldata data
     ) external;
@@ -108,7 +119,7 @@ interface IMultiSigWallet is IMultiSigWalletTypes {
      * @param data The input data of the transaction.
      */
     function submitAndApprove(
-        address to,
+        address to, // Tools: this comment prevents Prettier from formatting into a single line.
         uint256 value,
         bytes calldata data
     ) external;
@@ -214,6 +225,8 @@ interface IMultiSigWallet is IMultiSigWalletTypes {
      * @param newCooldownTime The new value of the cooldown time.
      */
     function configureCooldownTime(uint120 newCooldownTime) external;
+
+    // ------------------ View functions -------------------------- //
 
     /**
      * @dev Returns the number of approvals for a transaction.

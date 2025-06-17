@@ -9,15 +9,17 @@ import { MultiSigWalletBase } from "./base/MultiSigWalletBase.sol";
 
 /**
  * @title MultiSigWalletUpgradeable contract
- * @author CloudWalk Inc.
+ * @author CloudWalk Inc. (See https://www.cloudwalk.io)
  * @dev The implementation of the upgradeable multi-signature wallet contract.
  */
 contract MultiSigWalletUpgradeable is Initializable, UUPSUpgradeable, MultiSigWalletBase {
+    // ------------------ Constructor ----------------------------- //
+
     /**
-     * @dev Constructor that prohibits the initialization of the implementation of the upgradable contract.
+     * @dev Constructor that prohibits the initialization of the implementation of the upgradeable contract.
      *
      * See details
-     * https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable#initializing_the_implementation_contract
+     * https://docs.openzeppelin.com/upgrades-plugins/writing-upgradeable#initializing_the_implementation_contract
      *
      * @custom:oz-upgrades-unsafe-allow constructor
      */
@@ -25,10 +27,12 @@ contract MultiSigWalletUpgradeable is Initializable, UUPSUpgradeable, MultiSigWa
         _disableInitializers();
     }
 
+    // ------------------ Initializers ---------------------------- //
+
     /**
-     * @dev The initializer of the upgradable contract.
+     * @dev The initializer of the upgradeable contract.
      *
-     * See details https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable
+     * See details: https://docs.openzeppelin.com/upgrades-plugins/writing-upgradeable
      *
      * Requirements:
      *
@@ -39,31 +43,11 @@ contract MultiSigWalletUpgradeable is Initializable, UUPSUpgradeable, MultiSigWa
      * @param newRequiredApprovals The number of required approvals to execute a transaction.
      */
     function initialize(address[] memory newOwners, uint16 newRequiredApprovals) external initializer {
-        __Multisig_init(newOwners, newRequiredApprovals);
-    }
-
-    /**
-     * @dev The internal initializer of the upgradable contract.
-     *
-     * See {MultiSigWalletUpgradeable-initialize}.
-     */
-    function __Multisig_init(address[] memory newOwners, uint16 newRequiredApprovals) internal onlyInitializing {
-        __Multisig_init_unchained(newOwners, newRequiredApprovals);
-    }
-
-    /**
-     * @dev The unchained internal initializer of the upgradable contract.
-     *
-     * See {MultiSigWalletUpgradeable-initialize}.
-     */
-    function __Multisig_init_unchained(address[] memory newOwners, uint16 newRequiredApprovals)
-        internal
-        onlyInitializing
-    {
-        __UUPSUpgradeable_init_unchained();
         _configureExpirationTime(10 days);
         _configureOwners(newOwners, newRequiredApprovals);
     }
+
+    // ------------------ Internal functions ---------------------- //
 
     /**
      * @dev Upgrade authorization function.
@@ -74,11 +58,7 @@ contract MultiSigWalletUpgradeable is Initializable, UUPSUpgradeable, MultiSigWa
      *
      * Requirements:
      *
-     * - The caller must be the multisig itself.
+     * - The caller must be the multi-signature wallet itself.
      */
-    function _authorizeUpgrade(address newImplementation)
-        internal
-        onlySelfCall
-        override
-    {}
+    function _authorizeUpgrade(address newImplementation) internal override onlySelfCall {}
 }

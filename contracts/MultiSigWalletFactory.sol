@@ -6,23 +6,29 @@ import { MultiSigWallet } from "./MultiSigWallet.sol";
 
 /**
  * @title MultiSigWalletFactory contract
- * @author CloudWalk Inc.
- * @dev The contract factory for creating new multisig wallet contracts.
+ * @author CloudWalk Inc. (See https://www.cloudwalk.io)
+ * @dev The contract factory for creating new multi-signature wallet contracts.
  */
 contract MultiSigWalletFactory {
+    // ------------------ Events ---------------------------------- //
+
     /**
-     * @dev Emitted when a new multisig wallet is deployed.
+     * @dev Emitted when a new multi-signature wallet is deployed.
      * @param deployer The address of the wallet deployer.
      * @param wallet The address of the deployed wallet.
-     * @param id The id of the deployed wallet.
+     * @param id The ID of the deployed wallet.
      */
     event NewWallet(address indexed deployer, address indexed wallet, uint indexed id);
+
+    // ------------------ Storage --------------------------------- //
 
     /// @dev An array of wallets deployed by this factory.
     address[] public wallets;
 
+    // ------------------ Transactional functions ----------------- //
+
     /**
-     * @dev Deploys a new multisig wallet contract.
+     * @dev Deploys a new multi-signature wallet contract.
      * @param owners An array of the owners of the deployed wallet.
      * @param requiredApprovals The number of required approvals to execute transactions.
      * @return The address of the deployed wallet.
@@ -33,6 +39,8 @@ contract MultiSigWalletFactory {
         emit NewWallet(msg.sender, newWallet, wallets.length - 1);
         return newWallet;
     }
+
+    // ------------------ View functions -------------------------- //
 
     /**
      * @dev Returns the number of deployed wallets.

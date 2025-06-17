@@ -6,7 +6,7 @@ import { IMultiSigWalletTypes } from "./IMultiSigWallet.sol";
 
 /**
  * @title MultiSigWallet storage - version 1
- * @author CloudWalk Inc.
+ * @author CloudWalk Inc. (See https://www.cloudwalk.io)
  */
 abstract contract MultiSigWalletStorageV1 is IMultiSigWalletTypes {
     /// @dev The array of wallet owners.
@@ -36,6 +36,8 @@ abstract contract MultiSigWalletStorageV1 is IMultiSigWalletTypes {
 
 /**
  * @title MultiSigWallet storage
+ * @author CloudWalk Inc. (See https://www.cloudwalk.io)
+ * @dev Contains storage variables of the multi-signature wallet contract.
  *
  * When we need to add new storage variables, we create a new version of MultiSigWalletStorage
  * e.g. MultiSigWalletStorage<versionNumber>, so at the end it would look like
