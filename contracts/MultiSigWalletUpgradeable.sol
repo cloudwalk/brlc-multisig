@@ -54,7 +54,7 @@ contract MultiSigWalletUpgradeable is Initializable, UUPSUpgradeable, MultiSigWa
      *
      * See details: https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable
      *
-     * @param newImplementation The address of the new implementation
+     * @param newImplementation The address of the new implementation.
      *
      * Requirements:
      *
