@@ -101,7 +101,7 @@ abstract contract MultiSigWalletBase is MultiSigWalletStorage, IMultiSigWallet {
      * - The caller must be a wallet owner.
      */
     function submit(
-        address to, // Tools: this comment prevents Prettier from formatting into a single line.
+        address to, // Tools: prevent Prettier one-liner
         uint256 value,
         bytes calldata data
     ) external onlyOwner {
@@ -116,7 +116,7 @@ abstract contract MultiSigWalletBase is MultiSigWalletStorage, IMultiSigWallet {
      * - The caller must be a wallet owner.
      */
     function submitAndApprove(
-        address to, // Tools: this comment prevents Prettier from formatting into a single line.
+        address to, // Tools: prevent Prettier one-liner
         uint256 value,
         bytes calldata data
     ) external onlyOwner {
@@ -390,7 +390,7 @@ abstract contract MultiSigWalletBase is MultiSigWalletStorage, IMultiSigWallet {
      * @dev Submits a transaction internally. See {MultiSigWallet-submit}.
      */
     function _submit(
-        address to, // Tools: this comment prevents Prettier from formatting into a single line.
+        address to, // Tools: prevent Prettier one-liner
         uint256 value,
         bytes calldata data
     ) internal returns (uint256 txId) {
