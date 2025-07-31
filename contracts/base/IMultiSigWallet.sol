@@ -10,7 +10,7 @@ interface IMultiSigWalletTypes {
     /**
      * @dev The data of a single transaction.
      *
-     * The fields:
+     * Fields:
      *
      * - to ---------- The address of the transaction receiver.
      * - executed ---- The execution status of the transaction. True if executed.
