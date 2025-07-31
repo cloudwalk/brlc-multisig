@@ -18,7 +18,7 @@ contract MultiSigWalletUpgradeable is Initializable, UUPSUpgradeable, MultiSigWa
     /**
      * @dev Constructor that prohibits the initialization of the implementation of the upgradeable contract.
      *
-     * See details
+     * See details:
      * https://docs.openzeppelin.com/upgrades-plugins/writing-upgradeable#initializing_the_implementation_contract
      *
      * @custom:oz-upgrades-unsafe-allow constructor
@@ -30,7 +30,7 @@ contract MultiSigWalletUpgradeable is Initializable, UUPSUpgradeable, MultiSigWa
     // ------------------ Initializers ---------------------------- //
 
     /**
-     * @dev The initializer of the upgradeable contract.
+     * @dev Initializer of the upgradeable contract.
      *
      * See details: https://docs.openzeppelin.com/upgrades-plugins/writing-upgradeable
      *
@@ -52,9 +52,9 @@ contract MultiSigWalletUpgradeable is Initializable, UUPSUpgradeable, MultiSigWa
     /**
      * @dev Upgrade authorization function.
      *
-     * See details: https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable
+     * See details: https://docs.openzeppelin.com/upgrades-plugins/writing-upgradeable
      *
-     * @param newImplementation The address of the new implementation
+     * @param newImplementation The address of the new implementation.
      *
      * Requirements:
      *
