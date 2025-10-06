@@ -1,8 +1,8 @@
 import { ethers, upgrades } from "hardhat";
 
 async function main() {
-  const CONTRACT_NAME: string = ""; // TBD: Enter contract name
-  const PROXY_ADDRESS: string = ""; // TBD: Enter proxy address
+  const CONTRACT_NAME = ""; // TBD: Enter contract name
+  const PROXY_ADDRESS = ""; // TBD: Enter proxy address
 
   // Upgrade options:
   // unsafeAllowRenames: true
@@ -14,6 +14,6 @@ async function main() {
   console.log("Proxy upgraded");
 }
 
-main().then().catch(err => {
+main().catch((err) => {
   throw err;
 });

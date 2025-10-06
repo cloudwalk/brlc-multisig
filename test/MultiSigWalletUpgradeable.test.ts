@@ -36,13 +36,12 @@ describe("Contract 'MultiSigWalletUpgradeable'", () => {
 
   async function checkOwnership(
     wallet: Contract,
-    options: { ownerAddresses: string[]; expectedOwnershipStatus: boolean }
+    options: { ownerAddresses: string[]; expectedOwnershipStatus: boolean },
   ) {
-    for (let i = 0; i < options.ownerAddresses.length; ++i) {
-      const address = options.ownerAddresses[i];
+    for (const address of options.ownerAddresses) {
       expect(await wallet.isOwner(address)).to.eq(
         options.expectedOwnershipStatus,
-        `Wrong ownership status for address: ${address}`
+        `Wrong ownership status for address: ${address}`,
       );
     }
   }
@@ -53,7 +52,7 @@ describe("Contract 'MultiSigWalletUpgradeable'", () => {
     await wallet.waitForDeployment();
 
     return {
-      wallet
+      wallet,
     };
   }
 
@@ -65,7 +64,7 @@ describe("Contract 'MultiSigWalletUpgradeable'", () => {
     await walletImplementation.waitForDeployment();
 
     return {
-      walletImplementation
+      walletImplementation,
     };
   }
 
@@ -78,7 +77,7 @@ describe("Contract 'MultiSigWalletUpgradeable'", () => {
 
     return {
       wallet,
-      walletImplementation
+      walletImplementation,
     };
   }
 
@@ -87,7 +86,7 @@ describe("Contract 'MultiSigWalletUpgradeable'", () => {
     const upgradeInterface = new ethers.Interface(ABI);
     return upgradeInterface.encodeFunctionData(
       "upgradeTo",
-      [newImplementationAddress]
+      [newImplementationAddress],
     );
   }
 
@@ -102,7 +101,7 @@ describe("Contract 'MultiSigWalletUpgradeable'", () => {
       expect(await wallet.expirationTime()).to.eq(DEFAULT_EXPIRATION_TIME);
       await checkOwnership(wallet, {
         ownerAddresses,
-        expectedOwnershipStatus: true
+        expectedOwnershipStatus: true,
       });
     });
 
@@ -175,7 +174,7 @@ describe("Contract 'MultiSigWalletUpgradeable'", () => {
       await proveTx(connect(wallet, owner1).submitAndApprove(
         getAddress(wallet), // to
         0, // value
-        encodeUpgradeFunctionData(getAddress(newImplementation)) // data
+        encodeUpgradeFunctionData(getAddress(newImplementation)), // data
       ));
       await proveTx(connect(wallet, owner2).approveAndExecute(0));
 

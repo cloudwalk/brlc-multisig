@@ -36,7 +36,7 @@ describe("Contract 'MultiSigWalletFactory'", () => {
     const factory = await factoryContractFactory.deploy() as Contract;
     await factory.waitForDeployment();
     return {
-      factory
+      factory,
     };
   }
 
