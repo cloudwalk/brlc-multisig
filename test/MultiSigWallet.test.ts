@@ -98,13 +98,12 @@ describe("MultiSigWallet contract", () => {
 
   async function checkOwnership(
     wallet: Contract,
-    options: { ownerAddresses: string[]; expectedOwnershipStatus: boolean }
+    options: { ownerAddresses: string[]; expectedOwnershipStatus: boolean },
   ) {
-    for (let i = 0; i < options.ownerAddresses.length; ++i) {
-      const address = options.ownerAddresses[i];
+    for (const address of options.ownerAddresses) {
       expect(await wallet.isOwner(address)).to.eq(
         options.expectedOwnershipStatus,
-        `Wrong ownership status for address: ${address}`
+        `Wrong ownership status for address: ${address}`,
       );
     }
   }
@@ -112,21 +111,21 @@ describe("MultiSigWallet contract", () => {
   function encodeConfigureOwnersFunctionData(ownerAddresses: string[], requiredApprovals: number): string {
     return walletUpgradeableFactory.interface.encodeFunctionData(
       "configureOwners",
-      [ownerAddresses, requiredApprovals]
+      [ownerAddresses, requiredApprovals],
     );
   }
 
   function encodeConfigureCooldownTimeFunctionData(cooldownTime: number): string {
     return walletUpgradeableFactory.interface.encodeFunctionData(
       "configureCooldownTime",
-      [cooldownTime]
+      [cooldownTime],
     );
   }
 
   function encodeConfigureExpirationTimeTimeFunctionData(expirationTime: number): string {
     return walletUpgradeableFactory.interface.encodeFunctionData(
       "configureExpirationTime",
-      [expirationTime]
+      [expirationTime],
     );
   }
 
@@ -137,7 +136,7 @@ describe("MultiSigWallet contract", () => {
     await testContractMock.waitForDeployment();
 
     return {
-      testContractMock
+      testContractMock,
     };
   }
 
@@ -147,7 +146,7 @@ describe("MultiSigWallet contract", () => {
     await wallet.waitForDeployment();
 
     return {
-      wallet
+      wallet,
     };
   }
 
@@ -156,7 +155,7 @@ describe("MultiSigWallet contract", () => {
       await walletFactory.deploy(ownerAddresses, REQUIRED_APPROVALS) as Contract;
     await wallet.waitForDeployment();
     return {
-      wallet
+      wallet,
     };
   }
 
@@ -169,7 +168,7 @@ describe("MultiSigWallet contract", () => {
 
     return {
       wallet,
-      testContractMock
+      testContractMock,
     };
   }
 
@@ -184,7 +183,7 @@ describe("MultiSigWallet contract", () => {
       expect(await wallet.expirationTime()).to.eq(DEFAULT_EXPIRATION_TIME);
       await checkOwnership(wallet, {
         ownerAddresses,
-        expectedOwnershipStatus: true
+        expectedOwnershipStatus: true,
       });
     });
 
@@ -238,11 +237,11 @@ describe("MultiSigWallet contract", () => {
         // Check statuses of owners
         await checkOwnership(wallet, {
           ownerAddresses: newOwnerAddresses,
-          expectedOwnershipStatus: true
+          expectedOwnershipStatus: true,
         });
         await checkOwnership(wallet, {
           ownerAddresses: [owner3.address],
-          expectedOwnershipStatus: false
+          expectedOwnershipStatus: false,
         });
       });
 
@@ -363,7 +362,7 @@ describe("MultiSigWallet contract", () => {
 
           const txResponse = user.sendTransaction({
             to: getAddress(wallet),
-            value: params.value
+            value: params.value,
           });
 
           await expect(txResponse)
@@ -371,7 +370,7 @@ describe("MultiSigWallet contract", () => {
             .withArgs(user.address, params.value);
           await expect(txResponse).to.changeEtherBalances(
             [wallet, user],
-            [+params.value, -params.value]
+            [+params.value, -params.value],
           );
         }
 
@@ -390,7 +389,7 @@ describe("MultiSigWallet contract", () => {
         id: 0,
         to: ADDRESS_STUB1,
         value: TX_VALUE_STUB,
-        data: TX_DATA_STUB1
+        data: TX_DATA_STUB1,
       };
 
       it("Executes as expected and emits the correct event", async () => {
@@ -417,7 +416,7 @@ describe("MultiSigWallet contract", () => {
         id: 0,
         to: ADDRESS_STUB1,
         value: TX_VALUE_STUB,
-        data: TX_DATA_STUB1
+        data: TX_DATA_STUB1,
       };
 
       it("Executes as expected and emits the correct events", async () => {
@@ -445,7 +444,7 @@ describe("MultiSigWallet contract", () => {
         id: 0,
         to: ADDRESS_STUB1,
         value: 0,
-        data: TX_DATA_STUB1
+        data: TX_DATA_STUB1,
       };
 
       it("Executes as expected and emits the correct event", async () => {
@@ -502,14 +501,14 @@ describe("MultiSigWallet contract", () => {
           id: 0,
           to: ADDRESS_STUB1,
           value: 0,
-          data: TX_DATA_STUB1
+          data: TX_DATA_STUB1,
         },
         {
           id: 1,
           to: ADDRESS_STUB2,
           value: 0,
-          data: TX_DATA_STUB2
-        }
+          data: TX_DATA_STUB2,
+        },
       ];
       const txIds: number[] = txs.map(tx => tx.id);
 
@@ -584,7 +583,7 @@ describe("MultiSigWallet contract", () => {
         id: 0,
         to: ADDRESS_STUB1,
         value: 0,
-        data: TX_DATA_STUB1
+        data: TX_DATA_STUB1,
       };
 
       it("Executes as expected and emits the correct events", async () => {
@@ -656,14 +655,14 @@ describe("MultiSigWallet contract", () => {
           id: 0,
           to: ADDRESS_STUB1,
           value: 0,
-          data: TX_DATA_STUB1
+          data: TX_DATA_STUB1,
         },
         {
           id: 1,
           to: ADDRESS_STUB2,
           value: 0,
-          data: TX_DATA_STUB2
-        }
+          data: TX_DATA_STUB2,
+        },
       ];
       const txIds: number[] = txs.map(tx => tx.id);
 
@@ -754,7 +753,7 @@ describe("MultiSigWallet contract", () => {
         id: 0,
         to: ADDRESS_STUB1,
         value: 0,
-        data: TX_DATA_STUB1
+        data: TX_DATA_STUB1,
       };
 
       it("Executes as expected and emits the correct event", async () => {
@@ -817,14 +816,14 @@ describe("MultiSigWallet contract", () => {
           id: 0,
           to: ADDRESS_STUB1,
           value: 0,
-          data: TX_DATA_STUB1
+          data: TX_DATA_STUB1,
         },
         {
           id: 1,
           to: ADDRESS_STUB2,
           value: 0,
-          data: TX_DATA_STUB2
-        }
+          data: TX_DATA_STUB2,
+        },
       ];
       const txIds: number[] = txs.map(tx => tx.id);
 
@@ -909,7 +908,7 @@ describe("MultiSigWallet contract", () => {
         id: 0,
         to: ADDRESS_STUB1,
         value: 0,
-        data: TX_DATA_STUB1
+        data: TX_DATA_STUB1,
       };
 
       it("Executes as expected and emits the correct event", async () => {
@@ -959,14 +958,14 @@ describe("MultiSigWallet contract", () => {
           id: 0,
           to: ADDRESS_STUB1,
           value: 0,
-          data: TX_DATA_STUB1
+          data: TX_DATA_STUB1,
         },
         {
           id: 1,
           to: ADDRESS_STUB2,
           value: 0,
-          data: TX_DATA_STUB2
-        }
+          data: TX_DATA_STUB2,
+        },
       ];
       const txIds: number[] = txs.map(tx => tx.id);
 
@@ -1029,12 +1028,12 @@ describe("MultiSigWallet contract", () => {
     });
 
     describe("Functions 'getTransaction()' and 'getTransactions()'", () => {
-      const txs: TestTx[] = [0, 1, 2, 3].map(id => {
+      const txs: TestTx[] = [0, 1, 2, 3].map((id) => {
         return {
           id: id,
           to: ethers.toBeHex((id + 1), 20),
           value: id,
-          data: ethers.hexlify(ethers.toUtf8Bytes("Some data " + (id + 1)))
+          data: ethers.hexlify(ethers.toUtf8Bytes("Some data " + (id + 1))),
         };
       });
 
@@ -1093,7 +1092,7 @@ describe("MultiSigWallet contract", () => {
         id: 0,
         to: ADDRESS_STUB1,
         value: 0,
-        data: TX_DATA_STUB1
+        data: TX_DATA_STUB1,
       };
 
       async function executeWalletTx(params: { wallet: Contract; txData: string; txId?: number }): Promise<number> {
@@ -1190,7 +1189,7 @@ describe("MultiSigWallet contract", () => {
           id: 0,
           to: getAddress(testContractMock),
           value: params.txValue,
-          data: tokenInterface.encodeFunctionData(params.functionName, [amount])
+          data: tokenInterface.encodeFunctionData(params.functionName, [amount]),
         };
         await proveTx(connect(wallet, owner1).submitAndApprove(tx.to, tx.value, tx.data));
 
@@ -1198,7 +1197,7 @@ describe("MultiSigWallet contract", () => {
           wallet,
           testContractMock,
           tx,
-          amount
+          amount,
         };
       }
 
@@ -1206,13 +1205,13 @@ describe("MultiSigWallet contract", () => {
         it("The function of another contract exists and other conditions are met", async () => {
           const { wallet, testContractMock, tx, amount } = await beforeExecution({
             functionName: "testFunction",
-            txValue: TX_VALUE_STUB
+            txValue: TX_VALUE_STUB,
           });
           await proveTx(
             owner2.sendTransaction({
               to: getAddress(wallet),
-              value: tx.value
-            })
+              value: tx.value,
+            }),
           );
 
           const txResponse = connect(wallet, owner2).approveAndExecute(tx.id);
@@ -1224,7 +1223,7 @@ describe("MultiSigWallet contract", () => {
             .withArgs(getAddress(wallet), tx.value, amount);
           await expect(txResponse).to.changeEtherBalances(
             [wallet, testContractMock],
-            [-tx.value, tx.value]
+            [-tx.value, tx.value],
           );
         });
       });
@@ -1233,7 +1232,7 @@ describe("MultiSigWallet contract", () => {
         it("The function of another contract does not exist", async () => {
           const { wallet, tx } = await beforeExecution({
             functionName: "burn",
-            txValue: 0
+            txValue: 0,
           });
 
           await expect(connect(wallet, owner2).approveAndExecute(tx.id))
@@ -1244,7 +1243,7 @@ describe("MultiSigWallet contract", () => {
         it("The function of another contract is reverted during execution", async () => {
           const { wallet, testContractMock, tx } = await beforeExecution({
             functionName: "testFunction",
-            txValue: 0
+            txValue: 0,
           });
           await proveTx(testContractMock.disable());
 
@@ -1256,13 +1255,13 @@ describe("MultiSigWallet contract", () => {
         it("The wallet has not enough balance of the native tokens", async () => {
           const { wallet, tx } = await beforeExecution({
             functionName: "testFunction",
-            txValue: TX_VALUE_STUB
+            txValue: TX_VALUE_STUB,
           });
           await proveTx(
             owner2.sendTransaction({
               to: getAddress(wallet),
-              value: tx.value - 1
-            })
+              value: tx.value - 1,
+            }),
           );
 
           await expect(connect(wallet, owner2).approveAndExecute(tx.id))
