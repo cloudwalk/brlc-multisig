@@ -56,6 +56,30 @@ const config: HardhatUserConfig = {
   contractSizer: {
     runOnCompile: process.env.CONTRACT_SIZER_ENABLED === "true",
   },
+  etherscan: {
+    apiKey: {
+      cw_testnet: "empty",
+      cw_mainnet: "empty",
+    },
+    customChains: [
+      {
+        network: "cw_testnet",
+        chainId: 2008,
+        urls: {
+          apiURL: "https://explorer-api.services.staging.cloudwalk.network/api",
+          browserURL: "https://explorer.services.staging.cloudwalk.network",
+        },
+      },
+      {
+        network: "cw_mainnet",
+        chainId: 2009,
+        urls: {
+          apiURL: "https://explorer-api.services.production.cloudwalk.network/api",
+          browserURL: "https://explorer.services.production.cloudwalk.network",
+        },
+      },
+    ],
+  },
 };
 
 export default config;
